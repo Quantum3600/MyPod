@@ -92,7 +92,7 @@ MyPod/
 │   ├── SPEC.md
 │   └── STATE.md
 ├── app/
-│   ├── src/main/java/com/bytekoders/mypod/
+│   ├── src/main/java/com/trishit/mypod/
 │   └── src/test/java/
 ├── build.gradle.kts
 ├── gradle/
@@ -102,7 +102,7 @@ MyPod/
 └── local.properties
 ```
 
-The app is intentionally organized around the iPod-inspired UI, playback subsystems, and data services. See the implementation under `app/src/main/java/com/bytekoders/mypod` for the main UI, navigation, source management, and media code.
+The app is intentionally organized around the iPod-inspired UI, playback subsystems, and data services. See the implementation under `app/src/main/java/com/trishit/mypod` for the main UI, navigation, source management, and media code.
 
 ## Build and run
 

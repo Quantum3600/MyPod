@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.bytekoders.mypod"
+    namespace = "com.trishit.mypod"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.bytekoders.mypod"
+        applicationId = "com.trishit.mypod"
         minSdk = 29
         targetSdk = 37
         versionCode = 1

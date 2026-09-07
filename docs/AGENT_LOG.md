@@ -244,19 +244,19 @@
 ## [2025-03-30] Task 20: Prev/Next Click Wheel Buttons, Active Track Right Pane Card, Settings State Reactivity & Online Music Stream Resolving
 - **Changes Made**:
   - **Prev/Next Click Wheel Controls (`MainViewModel.kt`)**: Connected `onNextClick`, `onPrevClick`, `onNextHold`, and `onPrevHold` to `audioEngine.skipToNext()`, `audioEngine.skipToPrevious()`, `audioEngine.fastForward()`, and `audioEngine.rewind()`. Tapping `|<<` or `>>|` now skips tracks with tactile click sounds.
-  - **Now Playing Split-Screen Right Pane Preview ([`RightPanePreview.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/ui/components/RightPanePreview.kt), [`IpodScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/ui/components/IpodScreen.kt))**: Updated `RightPanePreview` to receive `nowPlayingState`. When a song is playing, the right side pane displays active album artwork (`AsyncImage`), `▶ Playing` / `⏸ Paused` status badge, track title, and artist name instead of `"No Track Playing"`.
-  - **Reactive Settings & Theme Selection ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+  - **Now Playing Split-Screen Right Pane Preview ([`RightPanePreview.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/ui/components/RightPanePreview.kt), [`IpodScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/ui/components/IpodScreen.kt))**: Updated `RightPanePreview` to receive `nowPlayingState`. When a song is playing, the right side pane displays active album artwork (`AsyncImage`), `▶ Playing` / `⏸ Paused` status badge, track title, and artist name instead of `"No Track Playing"`.
+  - **Reactive Settings & Theme Selection ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/MainViewModel.kt))**:
     - Implemented `refreshPresetsMenu()` to render theme options as radio button items (`(●)` vs `(○)`).
     - Subscribed `selectedThemeState` and `clickSoundEnabledState` to auto-update `presets_menu` and `settings_menu` in place on selection.
-  - **yt-dlp Direct Online Audio Stream Access ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with playable direct online MP3/AAC audio stream URIs (`https://...`), allowing ExoPlayer to stream online music immediately when `YTDLP` playback source is selected.
+  - **yt-dlp Direct Online Audio Stream Access ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with playable direct online MP3/AAC audio stream URIs (`https://...`), allowing ExoPlayer to stream online music immediately when `YTDLP` playback source is selected.
 - **Verification**:
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
 
 ## [2025-03-30] Task 21: Cover Flow Top Online Songs & Albums Integration
 - **Changes Made**:
-  - **yt-dlp Top Online Albums ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with rich online albums (`Lofi Beats & Study`, `Synthwave Classics`, `Acoustic Dreams`, `yt-dlp Top Trending Hits`) featuring high-res artwork (`artUri`) and direct online audio streams.
-  - **3D Cover Flow Carousel Merger ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+  - **yt-dlp Top Online Albums ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with rich online albums (`Lofi Beats & Study`, `Synthwave Classics`, `Acoustic Dreams`, `yt-dlp Top Trending Hits`) featuring high-res artwork (`artUri`) and direct online audio streams.
+  - **3D Cover Flow Carousel Merger ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/MainViewModel.kt))**:
     - Updated `refreshMusicSubmenus()` to merge top yt-dlp online albums into `_coverFlowAlbumsState` when yt-dlp resolver is enabled.
     - Updated `playAlbumByInfo()` to resolve online streams from `YtDlpSource` when a yt-dlp album is selected in Cover Flow and jump straight to Now Playing.
 - **Verification**:
@@ -265,11 +265,11 @@
 
 ## [2025-03-30] Task 22: Comprehensive Feature Audit, Coming Soon Prompts & Release Finalization
 - **Changes Made**:
-  - **Rigorous Feature Audit & Coming Soon Prompts ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+  - **Rigorous Feature Audit & Coming Soon Prompts ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/MainViewModel.kt))**:
     - Audited all 18+ screens and menus across playback, audio sources, themes, gimmicks, games, and settings.
     - Updated `onCenterButtonClicked()` in `MenuNavigationManager` to handle disabled/unsupported items and trigger `onComingSoonTriggered`.
     - Added user toast notification in `MainViewModel` (`"Coming Soon: [Title] integration requires external credentials."`) when clicking greyed-out sources (Spotify, YouTube, Apple Music).
-  - **Unit Test Fix ([`MenuNavigationManagerTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/bytekoders/mypod/navigation/MenuNavigationManagerTest.kt))**: Updated developer URL assertion to `"https://buymeacoffee.com/trishit.me"`.
+  - **Unit Test Fix ([`MenuNavigationManagerTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/trishit/mypod/navigation/MenuNavigationManagerTest.kt))**: Updated developer URL assertion to `"https://buymeacoffee.com/trishit.me"`.
 - **Verification**:
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
@@ -281,6 +281,17 @@
 - **Verification**:
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+## [2026-03-30] Task 24: Package Name Refactoring to com.trishit.mypod
+- **Changes Made**:
+  - **Gradle Configuration (`app/build.gradle.kts`)**: Updated `namespace` and `applicationId` to `"com.trishit.mypod"`.
+  - **Directory Moves**: Moved directory structures from `com/bytekoders/mypod` to `com/trishit/mypod` across `src/main/java/`, `src/test/java/`, and `src/androidTest/java/`.
+  - **Source Code Updates**: Updated package declarations, import statements, and string literals in all 70+ Kotlin source and test files to `com.trishit.mypod`.
+  - **Documentation Updates**: Updated package references and file paths in `README.md`, `STATE.md`, and `AGENT_LOG.md`.
+- **Verification**:
+  - `./gradlew testDebugUnitTest` executed and passed all 33 unit tests.
+  - `./gradlew assembleDebug` compiled successfully with zero errors.
+
 
 
 
