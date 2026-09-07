@@ -253,6 +253,17 @@
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
 
+## [2025-03-30] Task 21: Cover Flow Top Online Songs & Albums Integration
+- **Changes Made**:
+  - **yt-dlp Top Online Albums ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with rich online albums (`Lofi Beats & Study`, `Synthwave Classics`, `Acoustic Dreams`, `yt-dlp Top Trending Hits`) featuring high-res artwork (`artUri`) and direct online audio streams.
+  - **3D Cover Flow Carousel Merger ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+    - Updated `refreshMusicSubmenus()` to merge top yt-dlp online albums into `_coverFlowAlbumsState` when yt-dlp resolver is enabled.
+    - Updated `playAlbumByInfo()` to resolve online streams from `YtDlpSource` when a yt-dlp album is selected in Cover Flow and jump straight to Now Playing.
+- **Verification**:
+  - `./gradlew assembleDebug` built cleanly with zero compilation errors.
+  - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+
 
 
 

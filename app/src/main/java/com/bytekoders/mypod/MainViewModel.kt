@@ -796,10 +796,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MenuItem(
                 id = "set_about",
                 title = "About MyPod",
-                subtitle = "v1.0.0 • Developer: ByteKoders",
+                subtitle = "v1.0.0 • Developer: Trsihit Majumdar",
                 hasSubMenu = true,
-                rightPane = RightPaneContent.ActionPreview("About MyPod", "Project links and developer details"),
-                targetMenuId = "about_menu"
+                rightPane = RightPaneContent.ExternalLinkPreview("Developer Website",  url = "https://trishit.me"),
+                intentUrl = "https://trishit.me"
             )
         )
 

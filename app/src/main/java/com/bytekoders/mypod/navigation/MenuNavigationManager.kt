@@ -510,41 +510,33 @@ class MenuNavigationManager {
                 MenuItem(
                     id = "about_app_info",
                     title = "MyPod v1.0.0",
-                    subtitle = "Developer: ByteKoders",
+                    subtitle = "Developer: Trishit Majumdar",
                     hasSubMenu = false,
-                    rightPane = RightPaneContent.ActionPreview("MyPod v1.0.0", "Pixel-accurate iPod Classic player created by ByteKoders.")
+                    rightPane = RightPaneContent.ActionPreview("MyPod v1.0.0", "Pixel-accurate iPod Classic player created by Trishit.")
                 ),
                 MenuItem(
                     id = "about_coffee",
                     title = "Buy Me a Coffee",
                     subtitle = "Support Project",
                     hasSubMenu = false,
-                    rightPane = RightPaneContent.ExternalLinkPreview("Buy Me a Coffee", "https://buymeacoffee.com"),
-                    intentUrl = "https://buymeacoffee.com"
+                    rightPane = RightPaneContent.ExternalLinkPreview("Buy Me a Coffee", "https://buymeacoffee.com/trishit.me"),
+                    intentUrl = "https://buymeacoffee.com/trishit.me"
                 ),
                 MenuItem(
                     id = "about_linkedin",
                     title = "LinkedIn",
                     subtitle = "Connect with Developer",
                     hasSubMenu = false,
-                    rightPane = RightPaneContent.ExternalLinkPreview("LinkedIn", "https://linkedin.com"),
-                    intentUrl = "https://linkedin.com"
-                ),
-                MenuItem(
-                    id = "about_discord",
-                    title = "Discord",
-                    subtitle = "Join Community",
-                    hasSubMenu = false,
-                    rightPane = RightPaneContent.ExternalLinkPreview("Discord", "https://discord.gg"),
-                    intentUrl = "https://discord.gg"
+                    rightPane = RightPaneContent.ExternalLinkPreview("LinkedIn", "https://linkedin.com/trishit-majumdar"),
+                    intentUrl = "https://linkedin.com/trishit-majumdar"
                 ),
                 MenuItem(
                     id = "about_github",
                     title = "GitHub",
                     subtitle = "Source Code",
                     hasSubMenu = false,
-                    rightPane = RightPaneContent.ExternalLinkPreview("GitHub", "https://github.com"),
-                    intentUrl = "https://github.com"
+                    rightPane = RightPaneContent.ExternalLinkPreview("GitHub", "https://github.com/quantum3600"),
+                    intentUrl = "https://github.com/quantum3600"
                 )
             )
         )
