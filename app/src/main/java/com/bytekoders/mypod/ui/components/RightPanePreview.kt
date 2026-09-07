@@ -29,18 +29,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.bytekoders.mypod.navigation.RightPaneContent
+import com.bytekoders.mypod.source.NowPlayingState
 
 @Composable
 fun RightPanePreview(
     content: RightPaneContent,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nowPlayingState: NowPlayingState = NowPlayingState()
 ) {
     Box(
         modifier = modifier
@@ -56,7 +60,7 @@ fun RightPanePreview(
         contentAlignment = Alignment.Center
     ) {
         when (content) {
-            is RightPaneContent.DefaultArtwork -> DefaultArtworkCard()
+            is RightPaneContent.DefaultArtwork -> DefaultArtworkCard(nowPlayingState)
             is RightPaneContent.MusicCategory -> CategoryCard(
                 icon = Icons.Rounded.MusicNote,
                 title = content.categoryName
@@ -70,63 +74,157 @@ fun RightPanePreview(
 }
 
 @Composable
-private fun DefaultArtworkCard() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
+private fun DefaultArtworkCard(nowPlayingState: NowPlayingState) {
+    val track = nowPlayingState.currentTrack
+    if (track != null) {
+        Column(
             modifier = Modifier
-                .size(100.dp)
-                .shadow(6.dp, RoundedCornerShape(8.dp))
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF2C3E50),
-                            Color(0xFF4CA1AF)
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .shadow(6.dp, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF2C3E50),
+                                Color(0xFF4CA1AF)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (track.artUri != null) {
+                    AsyncImage(
+                        model = track.artUri,
+                        contentDescription = track.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.MusicNote,
+                        contentDescription = "Music",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
+
+                // Gloss Reflection
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, size.height * 0.5f)
                         )
                     )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.MusicNote,
-                contentDescription = "Music",
-                tint = Color.White.copy(alpha = 0.85f),
-                modifier = Modifier.size(48.dp)
-            )
+                }
+            }
 
-            // Gloss Reflection
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.25f),
-                            Color.Transparent
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, size.height * 0.5f)
-                    )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Status Badge
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(if (nowPlayingState.isPlaying) Color(0xFF2E7D32) else Color(0xFFC62828))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = if (nowPlayingState.isPlaying) "▶ Playing" else "⏸ Paused",
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "MyPod Classic",
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            color = Color(0xFF333333)
-        )
-        Text(
-            text = "No Track Playing",
-            fontSize = 10.sp,
-            color = Color(0xFF777777)
-        )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = track.title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                color = Color(0xFF111111),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = track.artist,
+                fontSize = 9.sp,
+                color = Color(0xFF555555),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .shadow(6.dp, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF2C3E50),
+                                Color(0xFF4CA1AF)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = "Music",
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(44.dp)
+                )
+
+                // Gloss Reflection
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, size.height * 0.5f)
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "MyPod Classic",
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                color = Color(0xFF333333)
+            )
+            Text(
+                text = "No Track Playing",
+                fontSize = 9.5.sp,
+                color = Color(0xFF777777)
+            )
+        }
     }
 }
 

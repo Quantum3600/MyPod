@@ -96,6 +96,13 @@ class MenuNavigationManager {
 
     fun registerMenu(menuState: MenuState) {
         allMenus[menuState.id] = menuState
+        val currentStack = _navigationStack.value.toMutableList()
+        val lastIdx = currentStack.lastIndex
+        if (lastIdx >= 0 && currentStack[lastIdx].id == menuState.id) {
+            val preservedIdx = currentStack[lastIdx].selectedIndex.coerceIn(0, (menuState.items.size - 1).coerceAtLeast(0))
+            currentStack[lastIdx] = menuState.copy(selectedIndex = preservedIdx)
+            _navigationStack.value = currentStack
+        }
     }
 
     fun navigateToNowPlaying() {
@@ -328,6 +335,27 @@ class MenuNavigationManager {
                     hasSubMenu = true,
                     rightPane = RightPaneContent.ActionPreview("Calendar", "Events and schedules"),
                     targetMenuId = "calendar_menu"
+                ),
+                MenuItem(
+                    id = "recorder",
+                    title = "Voice Recorder",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Voice Recorder", "Record voice memos and play saved audio clips."),
+                    targetMenuId = "recorder_menu"
+                ),
+                MenuItem(
+                    id = "camera",
+                    title = "Camera",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Camera", "Retro iPod LCD Camera & Photo Viewer."),
+                    targetMenuId = "camera_menu"
+                ),
+                MenuItem(
+                    id = "gemini_chat",
+                    title = "Gemini AI Voice Chat",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Gemini AI Chat", "Ask questions and chat via text & voice."),
+                    targetMenuId = "gemini_chat_menu"
                 )
             )
         )
@@ -341,6 +369,24 @@ class MenuNavigationManager {
         map["calendar_menu"] = MenuState(
             id = "calendar_menu",
             title = "Calendar",
+            items = emptyList()
+        )
+
+        map["recorder_menu"] = MenuState(
+            id = "recorder_menu",
+            title = "Voice Recorder",
+            items = emptyList()
+        )
+
+        map["camera_menu"] = MenuState(
+            id = "camera_menu",
+            title = "Camera",
+            items = emptyList()
+        )
+
+        map["gemini_chat_menu"] = MenuState(
+            id = "gemini_chat_menu",
+            title = "Gemini AI Chat",
             items = emptyList()
         )
 

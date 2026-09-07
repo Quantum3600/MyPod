@@ -17,6 +17,7 @@ class UserSettingsRepository(private val context: Context) {
         val ACTIVE_SOURCE = stringPreferencesKey("active_source")
         val YTDLP_RESOLVER_ENABLED = booleanPreferencesKey("ytdlp_resolver_enabled")
         val SAF_FOLDER_URI = stringPreferencesKey("saf_folder_uri")
+        val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
     }
 
     val activeSourceFlow: Flow<PlaybackSourceType> = context.userSettingsDataStore.data.map { prefs ->
@@ -30,6 +31,10 @@ class UserSettingsRepository(private val context: Context) {
 
     val safFolderUriFlow: Flow<String?> = context.userSettingsDataStore.data.map { prefs ->
         prefs[Keys.SAF_FOLDER_URI]
+    }
+
+    val geminiApiKeyFlow: Flow<String> = context.userSettingsDataStore.data.map { prefs ->
+        prefs[Keys.GEMINI_API_KEY] ?: ""
     }
 
     suspend fun setActiveSource(sourceType: PlaybackSourceType) {
@@ -51,6 +56,12 @@ class UserSettingsRepository(private val context: Context) {
             } else {
                 prefs.remove(Keys.SAF_FOLDER_URI)
             }
+        }
+    }
+
+    suspend fun setGeminiApiKey(apiKey: String) {
+        context.userSettingsDataStore.edit { prefs ->
+            prefs[Keys.GEMINI_API_KEY] = apiKey
         }
     }
 }

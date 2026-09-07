@@ -97,6 +97,7 @@ fun MyPodApp(
     val coverFlowIndex by viewModel.coverFlowIndexState.collectAsStateWithLifecycle()
     val quizTracks by viewModel.quizTracksState.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavoriteState.collectAsStateWithLifecycle()
+    val geminiApiKey by viewModel.geminiApiKeyState.collectAsStateWithLifecycle()
 
     val batteryState by rememberBatteryState()
     val localView = LocalView.current
@@ -181,6 +182,10 @@ fun MyPodApp(
             isFavorite = isFavorite,
             onToggleFavorite = {
                 viewModel.toggleFavoriteCurrentTrack()
+            },
+            geminiApiKey = geminiApiKey,
+            onSaveGeminiApiKey = { key ->
+                viewModel.saveGeminiApiKey(key)
             },
             modifier = Modifier
                 .fillMaxSize()

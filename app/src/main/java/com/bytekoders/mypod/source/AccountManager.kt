@@ -34,6 +34,12 @@ class AccountManager(
         initialValue = false
     )
 
+    val geminiApiKeyState: StateFlow<String> = userSettingsRepository.geminiApiKeyFlow.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
+
     fun setActiveSource(sourceType: PlaybackSourceType) {
         scope.launch(Dispatchers.IO) {
             userSettingsRepository.setActiveSource(sourceType)
@@ -43,6 +49,12 @@ class AccountManager(
     fun setYtdlpResolverEnabled(enabled: Boolean) {
         scope.launch(Dispatchers.IO) {
             userSettingsRepository.setYtdlpResolverEnabled(enabled)
+        }
+    }
+
+    fun setGeminiApiKey(apiKey: String) {
+        scope.launch(Dispatchers.IO) {
+            userSettingsRepository.setGeminiApiKey(apiKey)
         }
     }
 

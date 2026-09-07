@@ -38,6 +38,7 @@ import com.bytekoders.mypod.ui.components.WheelEvent
 import com.bytekoders.mypod.ui.sensors.TiltSensorManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,10 +108,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    val geminiApiKeyState: StateFlow<String> = accountManager.geminiApiKeyState
+
+    fun saveGeminiApiKey(apiKey: String) {
+        accountManager.setGeminiApiKey(apiKey)
+    }
+
     private fun isGameMenu(id: String): Boolean {
         return id in setOf(
             "brick_breaker_stub", "snake_stub", "solitaire_stub", "parachute_stub", "quiz_stub",
-            "clock_menu", "calendar_menu"
+            "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu"
         )
     }
 
@@ -133,6 +140,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val currentMenuState: StateFlow<MenuState> = navigationManager.navigationStack.mapStateFlow { stack ->
         stack.last()
     }
+
+    private var lyricsJob: Job? = null
+    private var favoriteJob: Job? = null
 
     init {
         tiltSensorManager.start()
@@ -167,23 +177,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     old?.id == new?.id && old?.title == new?.title && old?.artist == new?.artist
                 }
                 .collect { track ->
-                    refreshNowPlayingMenu(track)
+                    lyricsJob?.cancel()
+                    favoriteJob?.cancel()
+
                     if (track != null) {
+                        _lyricsState.value = null
                         _isLoadingLyricsState.value = true
-                        val result = withContext(Dispatchers.IO) {
-                            lyricsRepository.fetchLyrics(
+                        refreshNowPlayingMenu(track)
+
+                        lyricsJob = viewModelScope.launch(Dispatchers.IO) {
+                            val result = lyricsRepository.fetchLyrics(
                                 title = track.title,
                                 artist = track.artist,
                                 album = track.album,
                                 durationMs = track.durationMs
                             )
+                            _lyricsState.value = result
+                            _isLoadingLyricsState.value = false
                         }
-                        _lyricsState.value = result
-                        _isLoadingLyricsState.value = false
 
-                        playlistRepository.isFavoriteFlow(track.id).collect { fav ->
-                            _isFavoriteState.value = fav
-                            refreshNowPlayingMenu(track)
+                        favoriteJob = viewModelScope.launch {
+                            playlistRepository.isFavoriteFlow(track.id).collect { fav ->
+                                _isFavoriteState.value = fav
+                                refreshNowPlayingMenu(track)
+                            }
                         }
                     } else {
                         _lyricsState.value = null
@@ -627,21 +644,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun refreshAudioSourcesMenu() {
         val currentSource = activeSourceState.value
         val isYtdlp = ytdlpResolverEnabledState.value
+        val sources = PlaybackSourceType.entries
 
-        val items = listOf(
-            MenuItem(
-                id = "src_switcher",
-                title = "Active Source: ${currentSource.displayName}",
-                subtitle = "Tap to switch active playback source",
-                hasSubMenu = true,
-                rightPane = RightPaneContent.ActionPreview("Audio Source", "Switch active music provider"),
-                onSelectAction = {
-                    openSelectSourceMenu()
-                }
-            ),
+        val items = mutableListOf<MenuItem>()
+
+        sources.forEach { src ->
+            val isSupported = src in setOf(
+                PlaybackSourceType.LOCAL,
+                PlaybackSourceType.FILES,
+                PlaybackSourceType.YTDLP
+            )
+            val isSelected = src == currentSource
+            val radioSymbol = if (isSelected) "(●) " else "(○) "
+
+            val sub = when {
+                isSelected -> "Active Playback Source"
+                !isSupported && src == PlaybackSourceType.SPOTIFY -> "Disabled (Spotify App Remote Required)"
+                !isSupported && src == PlaybackSourceType.YOUTUBE -> "Disabled (YouTube Data API Key Required)"
+                !isSupported && src == PlaybackSourceType.APPLE_MUSIC -> "Disabled (MusicKit Token Required)"
+                else -> "Tap to select"
+            }
+
+            items.add(
+                MenuItem(
+                    id = "src_${src.name}",
+                    title = "$radioSymbol${src.displayName}",
+                    subtitle = sub,
+                    hasSubMenu = false,
+                    isEnabled = isSupported,
+                    rightPane = RightPaneContent.ActionPreview("Audio Source", src.displayName),
+                    onSelectAction = {
+                        accountManager.setActiveSource(src)
+                        refreshAudioSourcesMenu()
+                        refreshSettingsMenu()
+                    }
+                )
+            )
+        }
+
+        val ytdlpCheck = if (isYtdlp) "[x] " else "[ ] "
+        items.add(
             MenuItem(
                 id = "ytdlp_toggle",
-                title = "yt-dlp Stream Resolver",
+                title = "${ytdlpCheck}yt-dlp Stream Resolver",
                 subtitle = if (isYtdlp) "Status: Enabled (User Library Streams)" else "Status: Disabled",
                 hasSubMenu = false,
                 rightPane = RightPaneContent.ActionPreview("yt-dlp", "Direct YouTube audio stream extraction"),
@@ -655,40 +700,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         navigationManager.registerMenu(
             MenuState(id = "audio_sources_menu", title = "Audio Sources", items = items)
-        )
-    }
-
-    private fun openSelectSourceMenu() {
-        val currentSource = activeSourceState.value
-        val sources = PlaybackSourceType.entries
-
-        val sourceSubItems = sources.map { src ->
-            val isSupported = src in setOf(PlaybackSourceType.LOCAL, PlaybackSourceType.FILES, PlaybackSourceType.YTDLP)
-            val sub = when {
-                src == currentSource -> "✓ Active"
-                !isSupported && src == PlaybackSourceType.SPOTIFY -> "Disabled (Spotify App Remote Credentials Required)"
-                !isSupported && src == PlaybackSourceType.YOUTUBE -> "Disabled (YouTube Data API Key Required)"
-                !isSupported && src == PlaybackSourceType.APPLE_MUSIC -> "Disabled (MusicKit Token Required)"
-                else -> "Tap to select"
-            }
-
-            MenuItem(
-                id = "set_src_${src.name}",
-                title = src.displayName,
-                subtitle = sub,
-                hasSubMenu = false,
-                isEnabled = isSupported,
-                onSelectAction = {
-                    accountManager.setActiveSource(src)
-                    openSelectSourceMenu()
-                    refreshAudioSourcesMenu()
-                    refreshSettingsMenu()
-                }
-            )
-        }
-
-        navigationManager.pushMenu(
-            MenuState(id = "select_source_menu", title = "Select Source", items = sourceSubItems)
         )
     }
 
@@ -712,9 +723,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 subtitle = "Active: ${currentSource.displayName}",
                 hasSubMenu = true,
                 rightPane = RightPaneContent.ActionPreview("Audio Sources", "Select playback source"),
-                onSelectAction = {
-                    openSelectSourceMenu()
-                }
+                targetMenuId = "audio_sources_menu"
             ),
             MenuItem(
                 id = "set_ytdlp",
@@ -963,7 +972,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is WheelEvent.PlayPausePress -> onPlayPauseClick(null)
             is WheelEvent.MenuPress -> {
                 val currentId = currentMenuState.value.id
-                if (currentId != "solitaire_stub" && currentId != "clock_menu" && currentId != "calendar_menu") {
+                if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu")) {
                     onMenuClick(null)
                 }
             }
@@ -1045,19 +1054,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onPrevClick(view: View?) {
-        // Prev/Next buttons won't work; menu selection moves via wheel swiping
+        triggerDetentTick(view)
+        audioEngine.skipToPrevious()
     }
 
     fun onPrevHold() {
-        // Prev/Next buttons won't work
+        audioEngine.rewind(5000L)
     }
 
     fun onNextClick(view: View?) {
-        // Prev/Next buttons won't work; menu selection moves via wheel swiping
+        triggerDetentTick(view)
+        audioEngine.skipToNext()
     }
 
     fun onNextHold() {
-        // Prev/Next buttons won't work
+        audioEngine.fastForward(5000L)
     }
 
     fun onPlayPauseClick(view: View?) {

@@ -142,4 +142,50 @@ class MenuNavigationManagerTest {
         assertFalse(popped)
         assertEquals(1, navManager.navigationStack.value.size)
     }
+
+    @Test
+    fun `registerMenu updates active menu on stack in place while preserving selectedIndex`() {
+        val testMenu = MenuState(
+            id = "test_menu",
+            title = "Test Menu",
+            items = listOf(
+                MenuItem(id = "item1", title = "Item 1"),
+                MenuItem(id = "item2", title = "Item 2")
+            )
+        )
+        navManager.pushMenu(testMenu)
+        navManager.scrollDown() // selectedIndex becomes 1
+
+        assertEquals(2, navManager.navigationStack.value.size)
+        assertEquals(1, navManager.currentMenu.selectedIndex)
+
+        val updatedMenu = testMenu.copy(
+            items = listOf(
+                MenuItem(id = "item1", title = "(○) Item 1"),
+                MenuItem(id = "item2", title = "(●) Item 2")
+            )
+        )
+        navManager.registerMenu(updatedMenu)
+
+        assertEquals(2, navManager.navigationStack.value.size) // Stack size unchanged
+        assertEquals("test_menu", navManager.currentMenu.id)
+        assertEquals(1, navManager.currentMenu.selectedIndex) // Preserved index
+        assertEquals("(●) Item 2", navManager.currentMenu.items[1].title)
+    }
+
+    @Test
+    fun `extras menu contains recorder, camera, and gemini chat submenus`() {
+        while (navManager.selectedItem?.id != "extras") {
+            navManager.scrollDown()
+        }
+        assertEquals("extras", navManager.selectedItem?.id)
+
+        navManager.onCenterButtonClicked(onThemeSelected = {}, onIntentTriggered = {})
+        assertEquals("extras_menu", navManager.currentMenu.id)
+
+        val itemIds = navManager.currentMenu.items.map { it.id }
+        assertTrue("recorder" in itemIds)
+        assertTrue("camera" in itemIds)
+        assertTrue("gemini_chat" in itemIds)
+    }
 }

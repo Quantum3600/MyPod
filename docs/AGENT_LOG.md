@@ -196,3 +196,42 @@
 - **Verification**:
   - `./gradlew assembleDebug` compiled and built successfully.
   - `./gradlew testDebugUnitTest` passed all 29 unit tests cleanly.
+
+## [2025-03-30] Task 17: AudioEngine ExoPlayer Thread Safety, Foreground Service Crash Fix & Radio Buttons Source Navigation
+- **Changes Made**:
+  - **ExoPlayer Threading Fix (`AudioEngine.kt`)**: Wrapped ExoPlayer calls (`playQueue`, `playTrack`, `togglePlayPause`, `skipToNext`, `skipToPrevious`, `seekTo`, `seekRelative`, `toggleShuffle`, `toggleRepeatMode`, `release`) in a `runOnMainThread` helper using `Looper.getMainLooper()` and `Handler`. Fixed `IllegalStateException: Player is accessed on the wrong thread` when play commands originate from background coroutine dispatchers (e.g. `Dispatchers.IO`).
+  - **Foreground Service Crash Fix (`AudioEngine.kt`, `PlaybackService.kt`)**: Replaced `appContext.startForegroundService` with `appContext.startService` in `startPlaybackService()`. Fixed `RemoteServiceException$ForegroundServiceDidNotStartInTimeException` when starting playback while app is active.
+  - **Simplified Radio Buttons Audio Sources Navigation (`MainViewModel.kt`, `MenuNavigationManager.kt`, `MenuNavigationManagerTest.kt`)**:
+    - Updated `MenuNavigationManager.registerMenu()` to update the active top menu on the navigation stack in place while preserving `selectedIndex`.
+    - Simplified `refreshAudioSourcesMenu()` to render sources cleanly on a single screen with radio button indicators `(●)` vs `(○)` for playback sources and `[x]` vs `[ ]` for the yt-dlp resolver toggle.
+    - Removed nested `openSelectSourceMenu()` push loops that caused stack overflow / multi-layered duplicate screens.
+- **Verification**:
+  - `./gradlew app:assembleDebug` compiled and built successfully.
+  - `./gradlew testDebugUnitTest` passed all 30 unit tests cleanly.
+
+## [2025-03-30] Task 18: Lyrics Fetching Speed Optimization, Immediate Loading State & Example Fallback Engine
+- **Changes Made**:
+  - **Async Unblocked Track Pipeline (`MainViewModel.kt`)**: Replaced blocking `playlistRepository.isFavoriteFlow.collect` inside `nowPlayingState.collect` with separate `lyricsJob` and `favoriteJob` instances. On track change, old jobs are immediately cancelled, `_isLoadingLyricsState.value = true` and `_lyricsState.value = null` are set instantly on the Main thread without stalling future track changes.
+  - **Smart Title Cleaning & Fast LRCLIB Lookups (`LyricsRepository.kt`)**:
+    - Implemented `cleanTitle` & `cleanArtist` to strip `.mp3`, `.flac`, track numbers (e.g. `01 - `), and `(Official Music Video)` noise.
+    - Query LRCLIB API first without restrictive album/duration filters that caused false 404s.
+  - **Example Synced Lyrics Fallback Engine (`LyricsRepository.kt`, `LyricsRepositoryTest.kt`)**: Added `generateExampleLyrics()` template engine for tracks where online lyrics are not found or device is offline.
+- **Verification**:
+  - `./gradlew app:assembleDebug` compiled and built successfully.
+  - `./gradlew testDebugUnitTest` passed all 32 unit tests cleanly.
+
+## [2025-03-30] Task 19: Extras Gimmicks - Voice Recorder, Camera, Gemini AI Voice Chat
+- **Changes Made**:
+  - **Manifest Permissions (`AndroidManifest.xml`)**: Added `<uses-permission android:name="android.permission.RECORD_AUDIO" />`, `<uses-permission android:name="android.permission.CAMERA" />`, and `<uses-feature android:name="android.hardware.camera" android:required="false" />`.
+  - **DataStore Storage (`UserSettingsRepository.kt`, `AccountManager.kt`, `MainViewModel.kt`)**: Added `geminiApiKeyFlow` and `setGeminiApiKey` to persist user's Gemini API key in DataStore.
+  - **Voice Recorder Gimmick (`RecorderScreen.kt`)**: Built a retro iPod voice memo recorder using `MediaRecorder` + `MediaPlayer`. Features live VU meter bars, duration counter, saved memos list, permission checks, and Click Wheel controls (Center/Play-Pause to start/stop recording and play saved memos).
+  - **Camera Gimmick (`CameraScreen.kt`)**: Implemented retro iPod camera using CameraX (`PreviewView`, `ImageCapture`). Features live camera LCD viewfinder, shutter flash animation, saved photo gallery browser, and Click Wheel controls (Center button to snap photo, scroll/play-pause to browse gallery).
+  - **Gemini AI Voice Chat (`VoiceChatScreen.kt`)**: Built a voice & text AI assistant powered by Gemini API (`gemini-1.5-flash`). Features voice input via `SpeechRecognizer`, voice output via `TextToSpeech`, quick question prompts, chat history list, and persistent API key management.
+  - **Menu Navigation Integration (`MenuNavigationManager.kt`, `IpodScreen.kt`, `IpodChassis.kt`, `MainActivity.kt`)**: Added `Voice Recorder`, `Camera`, and `Gemini AI Voice Chat` to `extras_menu`, forwarding Click Wheel events and API key state cleanly to active gimmick screens.
+  - **Unit Tests (`MenuNavigationManagerTest.kt`)**: Added test verifying Extras menu items and submenus.
+- **Verification**:
+  - `./gradlew assembleDebug` built cleanly with zero compilation errors.
+  - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+
+

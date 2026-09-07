@@ -1,5 +1,7 @@
 package com.bytekoders.mypod.ui.components
 
+import android.R.attr.fontFamily
+import android.R.attr.fontWeight
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -475,7 +477,7 @@ fun ClickWheel(
         Text(
             text = "MENU",
             color = themePreset.wheelButtonTextColor,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Default,
             modifier = Modifier
@@ -491,7 +493,7 @@ fun ClickWheel(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .offset(x = (sizeDp * 0.06f))
-                .size(32.dp),
+                .size(34.dp),
         )
 
         // NEXT / Skip Forward (Right)
@@ -502,7 +504,7 @@ fun ClickWheel(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .offset(x = -(sizeDp * 0.06f))
-                .size(32.dp),
+                .size(34.dp),
         )
 
         // PLAY / PAUSE (Bottom) - show Play and Pause icons closely spaced

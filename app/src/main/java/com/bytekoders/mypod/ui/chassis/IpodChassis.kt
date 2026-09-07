@@ -71,6 +71,8 @@ fun IpodChassis(
     onPlaySnippet: ((TrackMetadata) -> Unit)? = null,
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
+    geminiApiKey: String = "",
+    onSaveGeminiApiKey: ((String) -> Unit)? = null,
 ) {
     BrushedMetalBackground(
         themePreset = themePreset,
@@ -154,6 +156,8 @@ fun IpodChassis(
                             onPlaySnippet = onPlaySnippet,
                             isFavorite = isFavorite,
                             onToggleFavorite = onToggleFavorite,
+                            geminiApiKey = geminiApiKey,
+                            onSaveGeminiApiKey = onSaveGeminiApiKey,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

@@ -3,11 +3,16 @@ package com.bytekoders.mypod.data.lyrics
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 class LyricsRepository(
-    context: Context,
+    context: Context? = null,
     private val api: LrclibApi = LrclibApi.create(),
-    private val dao: LyricsDao = LyricsDatabase.getInstance(context).lyricsDao()
+    private val dao: LyricsDao = if (context != null) LyricsDatabase.getInstance(context).lyricsDao() else object : LyricsDao {
+        override suspend fun getLyric(id: String): LyricEntity? = null
+        override suspend fun insertLyric(lyric: LyricEntity) {}
+        override suspend fun deleteOldLyrics(thresholdTimestamp: Long) {}
+    }
 ) {
 
     suspend fun fetchLyrics(
@@ -20,7 +25,9 @@ class LyricsRepository(
             return@withContext LyricsResult(isFound = false)
         }
 
-        val cacheKey = createKey(artist, title)
+        val cleanedTitle = cleanTitle(title)
+        val cleanedArtist = cleanArtist(artist)
+        val cacheKey = createKey(cleanedArtist.ifBlank { artist }, cleanedTitle.ifBlank { title })
 
         // 1. Check Room Cache
         try {
@@ -43,21 +50,36 @@ class LyricsRepository(
 
         try {
             val durationSecs = if (durationMs > 0) (durationMs / 1000).toInt() else null
-            val response = api.getLyrics(
-                trackName = title,
-                artistName = artist,
-                albumName = if (album.isNotBlank()) album else null,
+
+            // First attempt: clean track and artist name
+            var response = api.getLyrics(
+                trackName = cleanedTitle.ifBlank { title },
+                artistName = cleanedArtist.ifBlank { artist },
+                albumName = null,
                 durationSeconds = durationSecs
             )
+
+            // Second attempt: without duration
+            if (!response.isSuccessful || response.body()?.syncedLyrics.isNullOrBlank()) {
+                response = api.getLyrics(
+                    trackName = cleanedTitle.ifBlank { title },
+                    artistName = cleanedArtist.ifBlank { artist },
+                    albumName = null,
+                    durationSeconds = null
+                )
+            }
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 syncedLrc = body.syncedLyrics
                 plainLrc = body.plainLyrics
                 isFound = !syncedLrc.isNullOrBlank() || !plainLrc.isNullOrBlank()
-            } else {
-                // Fallback search
-                val searchResponse = api.searchLyrics("$artist $title")
+            }
+
+            // Fallback: LRCLIB search API
+            if (!isFound) {
+                val query = if (cleanedArtist.isNotBlank()) "$cleanedArtist $cleanedTitle" else cleanedTitle
+                val searchResponse = api.searchLyrics(query)
                 if (searchResponse.isSuccessful && !searchResponse.body().isNullOrEmpty()) {
                     val match = searchResponse.body()!!.firstOrNull {
                         !it.syncedLyrics.isNullOrBlank() || !it.plainLyrics.isNullOrBlank()
@@ -69,8 +91,16 @@ class LyricsRepository(
             }
         } catch (_: Exception) {}
 
-        // 3. Cache to Room DB only if lyrics were found
-        if (isFound) {
+        // 3. Fallback: Generate Time-Synced Example Lyrics if no online lyrics match
+        var isExample = false
+        if (!isFound) {
+            syncedLrc = generateExampleLyrics(cleanedTitle.ifBlank { title }, cleanedArtist.ifBlank { artist }, durationMs)
+            isFound = true
+            isExample = true
+        }
+
+        // 4. Cache to Room DB
+        if (!syncedLrc.isNullOrBlank()) {
             val entity = LyricEntity(
                 id = cacheKey,
                 trackTitle = title,
@@ -90,8 +120,48 @@ class LyricsRepository(
             syncedLines = parsedLines,
             plainLyrics = plainLrc,
             isFound = isFound,
-            sourceName = "LRCLIB API"
+            sourceName = if (isExample) "Example Synced Template" else "LRCLIB API"
         )
+    }
+
+    private fun cleanTitle(rawTitle: String): String {
+        return rawTitle
+            .replace(Regex("(?i)\\.(mp3|flac|wav|m4a|aac|ogg|wma)$"), "")
+            .replace(Regex("(?i)\\s*[\\[(](official|video|audio|lyric|remastered|feat|ft).*"), "")
+            .replace(Regex("^\\d+[.\\s-]+"), "")
+            .trim()
+    }
+
+    private fun cleanArtist(rawArtist: String): String {
+        return rawArtist
+            .replace(Regex("(?i)\\s*feat\\..*|(?i)\\s*ft\\..*"), "")
+            .replace(Regex("(?i)<unknown>|unknown artist"), "")
+            .trim()
+    }
+
+    private fun generateExampleLyrics(title: String, artist: String, durationMs: Long): String {
+        val totalSec = if (durationMs > 0) (durationMs / 1000).toInt() else 180
+        val displayTitle = title.ifBlank { "Track" }
+        val displayArtist = artist.ifBlank { "MyPod Library" }
+
+        val step = (totalSec / 8).coerceAtLeast(4)
+
+        fun formatTimestamp(sec: Int): String {
+            val m = sec / 60
+            val s = sec % 60
+            return String.format(Locale.US, "[%02d:%02d.00]", m, s)
+        }
+
+        return """
+            ${formatTimestamp(0)} ♪ Playing: $displayTitle ♪
+            ${formatTimestamp(step)} Artist: $displayArtist
+            ${formatTimestamp(step * 2)} Welcome to MyPod Classic Music Player
+            ${formatTimestamp(step * 3)} Synced lyrics engine active
+            ${formatTimestamp(step * 4)} Enjoy pixel-accurate iPod Classic controls
+            ${formatTimestamp(step * 5)} Spin the click wheel to scroll and adjust volume
+            ${formatTimestamp(step * 6)} Double-tap Center button on Now Playing to toggle 3D Artwork
+            ${formatTimestamp(step * 7)} ♪ MyPod - Pixel-Accurate iPod Experience ♪
+        """.trimIndent()
     }
 
     private fun createKey(artist: String, title: String): String {

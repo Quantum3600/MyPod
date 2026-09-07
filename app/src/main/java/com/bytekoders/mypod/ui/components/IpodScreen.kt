@@ -54,7 +54,10 @@ import com.bytekoders.mypod.source.AlbumInfo
 import com.bytekoders.mypod.source.NowPlayingState
 import com.bytekoders.mypod.source.TrackMetadata
 import com.bytekoders.mypod.ui.extras.CalendarScreen
+import com.bytekoders.mypod.ui.extras.CameraScreen
 import com.bytekoders.mypod.ui.extras.ClockScreen
+import com.bytekoders.mypod.ui.extras.RecorderScreen
+import com.bytekoders.mypod.ui.extras.VoiceChatScreen
 import com.bytekoders.mypod.ui.games.BrickBreakerScreen
 import com.bytekoders.mypod.ui.games.MusicQuizScreen
 import com.bytekoders.mypod.ui.games.ParachuteScreen
@@ -81,7 +84,9 @@ fun IpodScreen(
     tracks: List<TrackMetadata> = emptyList(),
     onPlaySnippet: ((TrackMetadata) -> Unit)? = null,
     isFavorite: Boolean = false,
-    onToggleFavorite: (() -> Unit)? = null
+    onToggleFavorite: (() -> Unit)? = null,
+    geminiApiKey: String = "",
+    onSaveGeminiApiKey: ((String) -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -200,6 +205,43 @@ fun IpodScreen(
                     )
                 }
             }
+            "recorder_menu" -> {
+                if (gameWheelEvents != null) {
+                    RecorderScreen(
+                        wheelEvents = gameWheelEvents,
+                        onExit = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+            }
+            "camera_menu" -> {
+                if (gameWheelEvents != null) {
+                    CameraScreen(
+                        wheelEvents = gameWheelEvents,
+                        onExit = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+            }
+            "gemini_chat_menu" -> {
+                if (gameWheelEvents != null) {
+                    VoiceChatScreen(
+                        wheelEvents = gameWheelEvents,
+                        apiKey = geminiApiKey,
+                        onSaveApiKey = { newKey ->
+                            onSaveGeminiApiKey?.invoke(newKey)
+                        },
+                        onExit = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+            }
             else -> {
                 // Two-Pane Content Split Area occupying full height beneath top status bar
                 Row(
@@ -245,7 +287,8 @@ fun IpodScreen(
                             .fillMaxHeight()
                     ) {
                         RightPanePreview(
-                            content = activeItem?.rightPane ?: RightPaneContent.DefaultArtwork
+                            content = activeItem?.rightPane ?: RightPaneContent.DefaultArtwork,
+                            nowPlayingState = nowPlayingState
                         )
                     }
                 }

@@ -4,7 +4,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -99,14 +100,18 @@ class AudioEngine private constructor(private val appContext: Context) {
         })
     }
 
+    private inline fun runOnMainThread(crossinline action: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            action()
+        } else {
+            Handler(Looper.getMainLooper()).post { action() }
+        }
+    }
+
     private fun startPlaybackService() {
         try {
             val serviceIntent = Intent(appContext, PlaybackService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                appContext.startForegroundService(serviceIntent)
-            } else {
-                appContext.startService(serviceIntent)
-            }
+            appContext.startService(serviceIntent)
         } catch (_: Exception) {}
     }
 
@@ -122,8 +127,8 @@ class AudioEngine private constructor(private val appContext: Context) {
         playQueue(listOf(track), 0)
     }
 
-    fun playQueue(tracks: List<TrackMetadata>, startIndex: Int = 0) {
-        if (tracks.isEmpty()) return
+    fun playQueue(tracks: List<TrackMetadata>, startIndex: Int = 0) = runOnMainThread {
+        if (tracks.isEmpty()) return@runOnMainThread
         currentQueue = tracks
         currentIndex = startIndex.coerceIn(tracks.indices)
 
@@ -161,7 +166,7 @@ class AudioEngine private constructor(private val appContext: Context) {
         }
     }
 
-    fun togglePlayPause() {
+    fun togglePlayPause() = runOnMainThread {
         if (player.isPlaying) {
             player.pause()
         } else {
@@ -172,8 +177,8 @@ class AudioEngine private constructor(private val appContext: Context) {
         }
     }
 
-    fun skipToNext() {
-        if (currentQueue.isEmpty()) return
+    fun skipToNext() = runOnMainThread {
+        if (currentQueue.isEmpty()) return@runOnMainThread
         if (player.hasNextMediaItem()) {
             player.seekToNextMediaItem()
         } else {
@@ -182,8 +187,8 @@ class AudioEngine private constructor(private val appContext: Context) {
         player.play()
     }
 
-    fun skipToPrevious() {
-        if (currentQueue.isEmpty()) return
+    fun skipToPrevious() = runOnMainThread {
+        if (currentQueue.isEmpty()) return@runOnMainThread
         if (player.currentPosition > 3000L) {
             player.seekTo(0L)
         } else if (player.hasPreviousMediaItem()) {
@@ -202,13 +207,13 @@ class AudioEngine private constructor(private val appContext: Context) {
         seekRelative(-offsetMs)
     }
 
-    fun seekTo(positionMs: Long) {
+    fun seekTo(positionMs: Long) = runOnMainThread {
         val target = positionMs.coerceIn(0L, player.duration.coerceAtLeast(0L))
         player.seekTo(target)
         updateState { it.copy(positionMs = target) }
     }
 
-    fun seekRelative(offsetMs: Long) {
+    fun seekRelative(offsetMs: Long) = runOnMainThread {
         val current = player.currentPosition
         val duration = if (player.duration > 0) player.duration else 100_000L
         val target = (current + offsetMs).coerceIn(0L, duration)
@@ -216,13 +221,13 @@ class AudioEngine private constructor(private val appContext: Context) {
         updateState { it.copy(positionMs = target) }
     }
 
-    fun toggleShuffle() {
+    fun toggleShuffle() = runOnMainThread {
         val newShuffle = !nowPlayingState.value.shuffleEnabled
         player.shuffleModeEnabled = newShuffle
         updateState { it.copy(shuffleEnabled = newShuffle) }
     }
 
-    fun toggleRepeatMode() {
+    fun toggleRepeatMode() = runOnMainThread {
         val newMode = (nowPlayingState.value.repeatMode + 1) % 3
         player.repeatMode = when (newMode) {
             1 -> Player.REPEAT_MODE_ONE
@@ -254,7 +259,7 @@ class AudioEngine private constructor(private val appContext: Context) {
         positionUpdateJob = null
     }
 
-    fun release() {
+    fun release() = runOnMainThread {
         stopPositionUpdates()
         mediaSession.release()
         player.release()
