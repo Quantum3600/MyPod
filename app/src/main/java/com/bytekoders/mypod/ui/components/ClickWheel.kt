@@ -475,7 +475,7 @@ fun ClickWheel(
         Text(
             text = "MENU",
             color = themePreset.wheelButtonTextColor,
-            fontSize = 15.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Default,
             modifier = Modifier
