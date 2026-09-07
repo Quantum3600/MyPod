@@ -1,7 +1,6 @@
 package com.bytekoders.mypod.ui.extras
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -11,8 +10,6 @@ import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,12 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -53,12 +49,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -75,7 +69,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 data class ChatMessage(
     val sender: String, // "User" or "Gemini"
@@ -178,7 +171,7 @@ fun VoiceChatScreen(
                     .readTimeout(20, TimeUnit.SECONDS)
                     .build()
 
-                val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+                val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$apiKey"
 
                 val payload = JSONObject().apply {
                     put("contents", JSONArray().apply {
@@ -412,7 +405,7 @@ fun VoiceChatScreen(
                     }
                 } else {
                     Icon(
-                        imageVector = if (isSpeaking) Icons.Rounded.VolumeUp else Icons.Rounded.Mic,
+                        imageVector = if (isSpeaking) Icons.AutoMirrored.Rounded.VolumeUp else Icons.Rounded.Mic,
                         contentDescription = null,
                         tint = if (isSpeaking) Color(0xFF34D399) else Color.White,
                         modifier = Modifier.size(16.dp)

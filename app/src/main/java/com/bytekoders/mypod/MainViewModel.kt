@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.view.View
+import android.widget.Toast
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -48,7 +49,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -796,7 +796,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MenuItem(
                 id = "set_about",
                 title = "About MyPod",
-                subtitle = "v1.0.0 • Developer: Trsihit Majumdar",
+                subtitle = "v1.0.0 • Developer: Trishit Majumdar",
                 hasSubMenu = true,
                 rightPane = RightPaneContent.ExternalLinkPreview("Developer Website",  url = "https://trishit.me"),
                 intentUrl = "https://trishit.me"
@@ -1087,6 +1087,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     getApplication<Application>().startActivity(intent)
                 } catch (_: Exception) {}
+            },
+            onComingSoonTriggered = { title ->
+                Toast.makeText(
+                    getApplication(),
+                    "Coming Soon: $title integration requires external credentials.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         )
     }

@@ -133,7 +133,7 @@ class MenuNavigationManagerTest {
             onIntentTriggered = { triggeredUrl = it }
         )
 
-        assertEquals("https://buymeacoffee.com", triggeredUrl)
+        assertEquals("https://buymeacoffee.com/trishit.me", triggeredUrl)
     }
 
     @Test

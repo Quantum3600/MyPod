@@ -263,6 +263,18 @@
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
 
+## [2025-03-30] Task 22: Comprehensive Feature Audit, Coming Soon Prompts & Release Finalization
+- **Changes Made**:
+  - **Rigorous Feature Audit & Coming Soon Prompts ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+    - Audited all 18+ screens and menus across playback, audio sources, themes, gimmicks, games, and settings.
+    - Updated `onCenterButtonClicked()` in `MenuNavigationManager` to handle disabled/unsupported items and trigger `onComingSoonTriggered`.
+    - Added user toast notification in `MainViewModel` (`"Coming Soon: [Title] integration requires external credentials."`) when clicking greyed-out sources (Spotify, YouTube, Apple Music).
+  - **Unit Test Fix ([`MenuNavigationManagerTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/bytekoders/mypod/navigation/MenuNavigationManagerTest.kt))**: Updated developer URL assertion to `"https://buymeacoffee.com/trishit.me"`.
+- **Verification**:
+  - `./gradlew assembleDebug` built cleanly with zero compilation errors.
+  - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+
 
 
 

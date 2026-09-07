@@ -123,10 +123,14 @@ class MenuNavigationManager {
 
     fun onCenterButtonClicked(
         onThemeSelected: (ThemePreset) -> Unit,
-        onIntentTriggered: (String) -> Unit
+        onIntentTriggered: (String) -> Unit,
+        onComingSoonTriggered: ((String) -> Unit)? = null
     ) {
         val item = selectedItem ?: return
-        if (!item.isEnabled) return
+        if (!item.isEnabled) {
+            onComingSoonTriggered?.invoke(item.title)
+            return
+        }
 
         // 1. Theme Selection
         item.presetToSelect?.let { preset ->
@@ -535,8 +539,8 @@ class MenuNavigationManager {
                     title = "GitHub",
                     subtitle = "Source Code",
                     hasSubMenu = false,
-                    rightPane = RightPaneContent.ExternalLinkPreview("GitHub", "https://github.com/quantum3600"),
-                    intentUrl = "https://github.com/quantum3600"
+                    rightPane = RightPaneContent.ExternalLinkPreview("GitHub", "https://github.com/quantum3600/MyPod"),
+                    intentUrl = "https://github.com/quantum3600/MyPod"
                 )
             )
         )
