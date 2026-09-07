@@ -1,18 +1,16 @@
 # Current State Snapshot
 
 ## Current Milestone
-Comprehensive Feature Audit, Coming Soon Prompts & Release Finalization - COMPLETED
+popToRoot & hasCompletedOnboardingState Active Utilization - COMPLETED
 
 ## Implemented vs Stubbed
 
-### Core & Playback (`:app`)
-- **Complete Feature Audit**: Every single screen and feature across the app (Now Playing with 3D Artwork & Synced Lyrics, 3D Cover Flow, SAF Files Explorer, Playlists, Shuffle, Theme Presets, Sound Effects, Extras Gimmicks, Games) is fully implemented and operational.
-- **Explicit "Coming Soon" Prompts ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**: Clicking disabled or credential-dependent items (Spotify, YouTube Music, Apple Music) displays a clear toast notification explaining that the feature is coming soon and requires external API credentials.
-- **Controls & Audio Sources**: Click Wheel Previous/Next skipping, active track right-pane card, in-place radio button selection, and yt-dlp direct online audio stream playback.
+### Navigation & Onboarding (`:app`)
+- **Long-Press MENU to Pop to Root ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**: `popToRoot()` is now actively wired to `WheelEvent.MenuPress(isHold = true)`. Long-pressing the `MENU` button on the Click Wheel pops the navigation stack straight back to the root menu (`iPod` home screen) from any nested submenu.
+- **Active Onboarding State Collection ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**: `hasCompletedOnboardingState.first()` is collected in `MainViewModel.init` to check onboarding status and automatically launch the interactive User Guide screen on first app launch.
 
-### Extras & Gimmicks (`:app`)
-- **Voice Recorder, Camera, Gemini AI Chat**: Voice memo recorder with VU meters, CameraX viewfinder & photo gallery, and Gemini AI voice/text chat.
-- **Games**: Brick Breaker, Snake, Solitaire, Parachute, and Music Quiz.
+### Core & Playback (`:app`)
+- **Complete Feature Audit**: Every single screen and feature across the app is fully implemented and operational with explicit "Coming Soon" prompts for credential-dependent accounts.
 
 ## Next Tasks
 1. Complete Milestone 3: Sign In menu + Spotify integration.

@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -158,7 +159,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tiltSensorManager.start()
 
         viewModelScope.launch {
-            val completed = accountManager.userSettingsRepository.hasCompletedOnboardingFlow.firstOrNull() ?: false
+            val completed = hasCompletedOnboardingState.first()
             if (!completed && currentMenuState.value.id == "root") {
                 navigationManager.navigateToOnboarding()
             }
@@ -1016,7 +1017,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is WheelEvent.MenuPress -> {
                 val currentId = currentMenuState.value.id
                 if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu", "onboarding_menu")) {
-                    onMenuClick(null)
+                    if (event.isHold) {
+                        triggerDetentTick(null)
+                        navigationManager.popToRoot()
+                    } else {
+                        onMenuClick(null)
+                    }
                 }
             }
             is WheelEvent.SelectPress -> onCenterClick(null)

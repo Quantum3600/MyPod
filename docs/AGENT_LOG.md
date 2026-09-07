@@ -274,6 +274,15 @@
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
 
+## [2025-03-30] Task 23: popToRoot & hasCompletedOnboardingState Active Utilization
+- **Changes Made**:
+  - **Click Wheel Long-Press MENU (`MainViewModel.kt`, `MenuNavigationManager.kt`)**: Wired `popToRoot()` to `WheelEvent.MenuPress(isHold = true)`. Long-pressing the `MENU` button on the Click Wheel now instantly returns to the root menu (`iPod` home screen) from any nested submenu.
+  - **Active Onboarding State Collection (`MainViewModel.kt`)**: Connected `hasCompletedOnboardingState.first()` in `MainViewModel.init` to check onboarding status and automatically launch the interactive User Guide screen on first app launch.
+- **Verification**:
+  - `./gradlew assembleDebug` built cleanly with zero compilation errors.
+  - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+
 
 
 
