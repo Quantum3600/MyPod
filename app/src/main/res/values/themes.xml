@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.MyPod" parent="Theme.MaterialComponents.Light" />
+</resources>
