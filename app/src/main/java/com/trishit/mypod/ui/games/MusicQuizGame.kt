@@ -35,6 +35,7 @@ import com.trishit.mypod.source.TrackMetadata
 import com.trishit.mypod.ui.components.WheelEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlin.time.Duration.Companion.milliseconds
 
 data class QuizQuestion(
     val correctTrack: TrackMetadata,
@@ -145,10 +146,11 @@ class MusicQuizGameState(val availableTracks: List<TrackMetadata>) {
 
 @Composable
 fun MusicQuizScreen(
+    modifier: Modifier = Modifier,
     wheelEvents: SharedFlow<WheelEvent>,
     tracks: List<TrackMetadata> = emptyList(),
     onPlaySnippet: ((TrackMetadata) -> Unit)? = null,
-    modifier: Modifier = Modifier
+
 ) {
     val gameState = remember(tracks) { MusicQuizGameState(tracks) }
 
@@ -173,7 +175,7 @@ fun MusicQuizScreen(
     // Timer Loop
     LaunchedEffect(gameState.answerSubmitted, gameState.isQuizOver) {
         while (!gameState.answerSubmitted && !gameState.isQuizOver) {
-            delay(100L)
+            delay(100L.milliseconds)
             gameState.updateTimerTick()
         }
     }

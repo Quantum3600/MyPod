@@ -65,6 +65,7 @@ import com.trishit.mypod.ui.games.SnakeScreen
 import com.trishit.mypod.ui.games.SolitaireScreen
 import com.trishit.mypod.ui.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.SharedFlow
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun IpodScreen(
@@ -323,7 +324,7 @@ private fun IpodStatusBar(
         val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
         while (true) {
             currentTimeString = formatter.format(Date())
-            delay(1000L)
+            delay(1000L.milliseconds)
         }
     }
 

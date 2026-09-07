@@ -31,6 +31,7 @@ import com.trishit.mypod.ui.components.WheelEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
 
 data class Brick(
     val row: Int,
@@ -211,7 +212,7 @@ fun BrickBreakerScreen(
     // Game Loop
     LaunchedEffect(Unit) {
         while (true) {
-            delay(16L)
+            delay(16L.milliseconds)
             gameState.updateTick()
         }
     }

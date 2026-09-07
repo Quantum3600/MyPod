@@ -8,6 +8,7 @@ import com.trishit.mypod.source.AlbumInfo
 import com.trishit.mypod.source.PlaybackSourceType
 import com.trishit.mypod.source.PlaylistInfo
 import com.trishit.mypod.source.TrackMetadata
+import androidx.core.net.toUri
 
 class MediaStoreScanner(private val context: Context) {
 
@@ -53,7 +54,7 @@ class MediaStoreScanner(private val context: Context) {
 
                     val mediaUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
                     val artUri = ContentUris.withAppendedId(
-                        Uri.parse("content://media/external/audio/albumart"),
+                        "content://media/external/audio/albumart".toUri(),
                         albumId
                     )
 
@@ -127,7 +128,7 @@ class MediaStoreScanner(private val context: Context) {
                     val count = cursor.getInt(countCol)
 
                     val artUri = ContentUris.withAppendedId(
-                        Uri.parse("content://media/external/audio/albumart"),
+                        "content://media/external/audio/albumart".toUri(),
                         id
                     )
 

@@ -44,6 +44,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.time.Duration.Companion.milliseconds
 
 data class WorldCity(
     val cityName: String,
@@ -79,7 +80,7 @@ fun ClockScreen(
     LaunchedEffect(Unit) {
         while (true) {
             currentTimeMs = System.currentTimeMillis()
-            delay(100L)
+            delay(100L.milliseconds)
         }
     }
 
@@ -87,7 +88,7 @@ fun ClockScreen(
     LaunchedEffect(stopwatchRunning) {
         var lastTime = System.currentTimeMillis()
         while (stopwatchRunning) {
-            delay(16L)
+            delay(16L.milliseconds)
             val now = System.currentTimeMillis()
             stopwatchTimeMs += (now - lastTime)
             lastTime = now

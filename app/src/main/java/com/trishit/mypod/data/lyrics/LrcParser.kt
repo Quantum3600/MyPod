@@ -5,8 +5,8 @@ import java.util.regex.Pattern
 object LrcParser {
 
     // Regex for matching timestamp patterns like [mm:ss.xx] or [mm:ss.xxx] or [hh:mm:ss.xx]
-    private val TIMESTAMP_PATTERN = Pattern.compile("\\[(\\d{1,2}):(\\d{2})(?:[.:](\\d{2,3}))?\\]")
-    private val HEADER_PATTERN = Pattern.compile("^\\[(ar|ti|al|by|offset|length|re|ve):.*\\]$", Pattern.CASE_INSENSITIVE)
+    private val TIMESTAMP_PATTERN = Pattern.compile("\\[(\\d{1,2}):(\\d{2})(?:[.:](\\d{2,3}))?]")
+    private val HEADER_PATTERN = Pattern.compile("^\\[(ar|ti|al|by|offset|length|re|ve):.*]$", Pattern.CASE_INSENSITIVE)
 
     fun parse(lrcContent: String?): List<LrcLine> {
         if (lrcContent.isNullOrBlank()) return emptyList()

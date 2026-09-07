@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
+import kotlin.time.Duration.Companion.milliseconds
 
 class AudioEngine private constructor(private val appContext: Context) {
 
@@ -135,7 +137,7 @@ class AudioEngine private constructor(private val appContext: Context) {
         val mediaItems = tracks.map { track ->
             val builder = MediaItem.Builder()
             if (track.mediaUri != null) {
-                builder.setUri(Uri.parse(track.mediaUri))
+                builder.setUri(track.mediaUri.toUri())
             } else {
                 builder.setMediaId(track.id)
             }
@@ -144,7 +146,7 @@ class AudioEngine private constructor(private val appContext: Context) {
                     .setTitle(track.title)
                     .setArtist(track.artist)
                     .setAlbumTitle(track.album)
-                    .setArtworkUri(track.artUri?.let { Uri.parse(it) })
+                    .setArtworkUri(track.artUri?.toUri())
                     .build()
             )
             builder.build()
@@ -249,7 +251,7 @@ class AudioEngine private constructor(private val appContext: Context) {
                         durationMs = if (dur > 0) dur else it.durationMs
                     )
                 }
-                delay(250)
+                delay(250.milliseconds)
             }
         }
     }

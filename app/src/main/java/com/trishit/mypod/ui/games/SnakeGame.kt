@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.trishit.mypod.ui.components.WheelEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlin.time.Duration.Companion.milliseconds
 
 data class Point(val x: Int, val y: Int)
 
@@ -160,7 +161,7 @@ fun SnakeScreen(
     // Game Loop
     LaunchedEffect(Unit) {
         while (true) {
-            delay(120L)
+            delay(120L.milliseconds)
             gameState.updateTick()
         }
     }

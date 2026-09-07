@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.time.Duration.Companion.milliseconds
 
 data class Shell(
     var x: Float,
@@ -233,7 +234,7 @@ fun ParachuteScreen(
     // Game Loop
     LaunchedEffect(Unit) {
         while (true) {
-            delay(25L)
+            delay(25L.milliseconds)
             gameState.updateTick()
         }
     }

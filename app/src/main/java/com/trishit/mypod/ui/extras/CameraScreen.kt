@@ -2,9 +2,6 @@ package com.trishit.mypod.ui.extras
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,9 +11,6 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,13 +29,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Camera
-import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +55,7 @@ import com.trishit.mypod.ui.components.WheelEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
 import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun CameraScreen(
@@ -72,7 +64,7 @@ fun CameraScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     var hasPermission by remember {
         mutableStateOf(
@@ -172,7 +164,7 @@ fun CameraScreen(
     // Flash animation dismiss
     LaunchedEffect(showFlash) {
         if (showFlash) {
-            delay(150L)
+            delay(150L.milliseconds)
             showFlash = false
         }
     }
@@ -205,7 +197,7 @@ fun CameraScreen(
     // Clear capture status text after delay
     LaunchedEffect(captureStatusText) {
         if (captureStatusText != null) {
-            delay(2000L)
+            delay(2000L.milliseconds)
             captureStatusText = null
         }
     }

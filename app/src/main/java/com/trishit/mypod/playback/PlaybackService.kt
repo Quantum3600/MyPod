@@ -5,7 +5,7 @@ import androidx.media3.session.MediaSessionService
 
 class PlaybackService : MediaSessionService() {
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession {
         return AudioEngine.getInstance(this).mediaSession
     }
 

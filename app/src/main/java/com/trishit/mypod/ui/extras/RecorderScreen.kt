@@ -1,7 +1,6 @@
 package com.trishit.mypod.ui.extras
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
@@ -10,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -48,8 +46,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -66,6 +62,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun RecorderScreen(
@@ -152,7 +149,7 @@ fun RecorderScreen(
     LaunchedEffect(isRecording) {
         var startTime = System.currentTimeMillis()
         while (isRecording) {
-            delay(100L)
+            delay(100L.milliseconds)
             recordingTimeMs += System.currentTimeMillis() - startTime
             startTime = System.currentTimeMillis()
             vuLevel = Random.nextFloat() * 0.8f + 0.2f
