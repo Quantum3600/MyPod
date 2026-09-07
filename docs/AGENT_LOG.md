@@ -127,6 +127,14 @@
   - `./gradlew assembleDebug` built successfully.
   - File static analysis passed with zero errors.
 
+## [2026-09-08] Documentation: README synthesis from design/spec files
+- **Changes Made**:
+  - Synthesized a project-level README from `AGENTS.md`, `docs/spec.md`, `DESIGN.md`, and current app state.
+  - Summarized the iPod Classic app's goals, architecture, feature set, and build/test workflow for contributors and visitors.
+  - Documented the project status and milestones in the repo state snapshot to keep the docs aligned with the current codebase.
+- **Verification**:
+  - Confirmed the source docs are consistent with the implemented architecture and project scope.
+
 ## [2025-03-30] Task 12: Status Bar Time Display, Fullscreen System Status Bar Hiding, Wheel Touchpad Navigation & Single-Step Selection Fix
 - **Changes Made**:
   - **Single-Step Selection Fix (`ClickWheel.kt`)**: Resolved index skipping bug where `ClickWheel` was calling both `onScrollDetents` and `onWheelEvent(WheelEvent.Scroll)`, causing double steps per detent tick. Updated `ClickWheel.kt` to route detents cleanly through `onWheelEvent` (with fallback to `onScrollDetents`), allowing every single menu item (0, 1, 2, 3...) to be visited sequentially without gaps.
@@ -232,6 +240,19 @@
 - **Verification**:
   - `./gradlew assembleDebug` built cleanly with zero compilation errors.
   - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
+## [2025-03-30] Task 20: Prev/Next Click Wheel Buttons, Active Track Right Pane Card, Settings State Reactivity & Online Music Stream Resolving
+- **Changes Made**:
+  - **Prev/Next Click Wheel Controls (`MainViewModel.kt`)**: Connected `onNextClick`, `onPrevClick`, `onNextHold`, and `onPrevHold` to `audioEngine.skipToNext()`, `audioEngine.skipToPrevious()`, `audioEngine.fastForward()`, and `audioEngine.rewind()`. Tapping `|<<` or `>>|` now skips tracks with tactile click sounds.
+  - **Now Playing Split-Screen Right Pane Preview ([`RightPanePreview.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/ui/components/RightPanePreview.kt), [`IpodScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/ui/components/IpodScreen.kt))**: Updated `RightPanePreview` to receive `nowPlayingState`. When a song is playing, the right side pane displays active album artwork (`AsyncImage`), `▶ Playing` / `⏸ Paused` status badge, track title, and artist name instead of `"No Track Playing"`.
+  - **Reactive Settings & Theme Selection ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/MainViewModel.kt))**:
+    - Implemented `refreshPresetsMenu()` to render theme options as radio button items (`(●)` vs `(○)`).
+    - Subscribed `selectedThemeState` and `clickSoundEnabledState` to auto-update `presets_menu` and `settings_menu` in place on selection.
+  - **yt-dlp Direct Online Audio Stream Access ([`YtDlpSource.kt`](file:///D:/projects/MyPod/app/src/main/java/com/bytekoders/mypod/source/youtube/YtDlpSource.kt))**: Configured `YtDlpSource` with playable direct online MP3/AAC audio stream URIs (`https://...`), allowing ExoPlayer to stream online music immediately when `YTDLP` playback source is selected.
+- **Verification**:
+  - `./gradlew assembleDebug` built cleanly with zero compilation errors.
+  - `./gradlew testDebugUnitTest` passed all 33 unit tests cleanly.
+
 
 
 

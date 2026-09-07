@@ -187,6 +187,9 @@ fun MyPodApp(
             onSaveGeminiApiKey = { key ->
                 viewModel.saveGeminiApiKey(key)
             },
+            onCompleteOnboarding = {
+                viewModel.completeOnboarding()
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

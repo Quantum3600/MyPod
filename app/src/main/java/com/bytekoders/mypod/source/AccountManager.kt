@@ -40,6 +40,12 @@ class AccountManager(
         initialValue = ""
     )
 
+    val hasCompletedOnboardingState: StateFlow<Boolean> = userSettingsRepository.hasCompletedOnboardingFlow.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     fun setActiveSource(sourceType: PlaybackSourceType) {
         scope.launch(Dispatchers.IO) {
             userSettingsRepository.setActiveSource(sourceType)
@@ -55,6 +61,12 @@ class AccountManager(
     fun setGeminiApiKey(apiKey: String) {
         scope.launch(Dispatchers.IO) {
             userSettingsRepository.setGeminiApiKey(apiKey)
+        }
+    }
+
+    fun setHasCompletedOnboarding(completed: Boolean) {
+        scope.launch(Dispatchers.IO) {
+            userSettingsRepository.setHasCompletedOnboarding(completed)
         }
     }
 

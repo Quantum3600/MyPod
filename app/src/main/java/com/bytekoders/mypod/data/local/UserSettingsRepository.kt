@@ -18,6 +18,7 @@ class UserSettingsRepository(private val context: Context) {
         val YTDLP_RESOLVER_ENABLED = booleanPreferencesKey("ytdlp_resolver_enabled")
         val SAF_FOLDER_URI = stringPreferencesKey("saf_folder_uri")
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
+        val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
     }
 
     val activeSourceFlow: Flow<PlaybackSourceType> = context.userSettingsDataStore.data.map { prefs ->
@@ -35,6 +36,10 @@ class UserSettingsRepository(private val context: Context) {
 
     val geminiApiKeyFlow: Flow<String> = context.userSettingsDataStore.data.map { prefs ->
         prefs[Keys.GEMINI_API_KEY] ?: ""
+    }
+
+    val hasCompletedOnboardingFlow: Flow<Boolean> = context.userSettingsDataStore.data.map { prefs ->
+        prefs[Keys.HAS_COMPLETED_ONBOARDING] ?: false
     }
 
     suspend fun setActiveSource(sourceType: PlaybackSourceType) {
@@ -62,6 +67,12 @@ class UserSettingsRepository(private val context: Context) {
     suspend fun setGeminiApiKey(apiKey: String) {
         context.userSettingsDataStore.edit { prefs ->
             prefs[Keys.GEMINI_API_KEY] = apiKey
+        }
+    }
+
+    suspend fun setHasCompletedOnboarding(completed: Boolean) {
+        context.userSettingsDataStore.edit { prefs ->
+            prefs[Keys.HAS_COMPLETED_ONBOARDING] = completed
         }
     }
 }

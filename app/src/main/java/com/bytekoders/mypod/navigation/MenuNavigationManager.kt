@@ -110,6 +110,11 @@ class MenuNavigationManager {
         pushMenu(nowPlayingMenu)
     }
 
+    fun navigateToOnboarding() {
+        val onboardingMenu = allMenus["onboarding_menu"] ?: createFallbackMenu("onboarding_menu", "User Guide")
+        pushMenu(onboardingMenu)
+    }
+
     fun popToRoot() {
         allMenus["root"]?.let { root ->
             _navigationStack.value = listOf(root)
@@ -433,6 +438,12 @@ class MenuNavigationManager {
             )
         )
 
+        map["onboarding_menu"] = MenuState(
+            id = "onboarding_menu",
+            title = "User Guide",
+            items = emptyList()
+        )
+
         // Settings Menu
         map["settings_menu"] = MenuState(
             id = "settings_menu",
@@ -451,6 +462,13 @@ class MenuNavigationManager {
                     hasSubMenu = true,
                     rightPane = RightPaneContent.ActionPreview("Audio Sources", "Select active source & stream resolver preferences."),
                     targetMenuId = "audio_sources_menu"
+                ),
+                MenuItem(
+                    id = "user_guide",
+                    title = "User Guide",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("User Guide", "Interactive guide on using your iPod Classic player."),
+                    targetMenuId = "onboarding_menu"
                 ),
                 MenuItem(
                     id = "about_settings",
@@ -482,6 +500,13 @@ class MenuNavigationManager {
             id = "about_menu",
             title = "About",
             items = listOf(
+                MenuItem(
+                    id = "about_guide",
+                    title = "User Guide",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("User Guide", "Interactive guide on using your iPod Classic player."),
+                    targetMenuId = "onboarding_menu"
+                ),
                 MenuItem(
                     id = "about_app_info",
                     title = "MyPod v1.0.0",

@@ -114,10 +114,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         accountManager.setGeminiApiKey(apiKey)
     }
 
+    val hasCompletedOnboardingState: StateFlow<Boolean> = accountManager.hasCompletedOnboardingState
+
+    fun completeOnboarding() {
+        accountManager.setHasCompletedOnboarding(true)
+        if (currentMenuState.value.id == "onboarding_menu") {
+            navigationManager.onMenuButtonClicked()
+        }
+    }
+
     private fun isGameMenu(id: String): Boolean {
         return id in setOf(
             "brick_breaker_stub", "snake_stub", "solitaire_stub", "parachute_stub", "quiz_stub",
-            "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu"
+            "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu",
+            "onboarding_menu"
         )
     }
 
@@ -148,6 +158,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tiltSensorManager.start()
 
         viewModelScope.launch {
+            val completed = accountManager.userSettingsRepository.hasCompletedOnboardingFlow.firstOrNull() ?: false
+            if (!completed && currentMenuState.value.id == "root") {
+                navigationManager.navigateToOnboarding()
+            }
+        }
+
+        viewModelScope.launch {
             playlistRepository.initDefaultPlaylists()
             playlistRepository.playlistsFlow.collect { playlists ->
                 refreshPlaylistsMenu(playlists)
@@ -155,9 +172,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
+            selectedThemeState.collect {
+                refreshPresetsMenu()
+                refreshSettingsMenu()
+            }
+        }
+        viewModelScope.launch {
+            clickSoundEnabledState.collect {
+                refreshSettingsMenu()
+            }
+        }
+        viewModelScope.launch {
             activeSourceState.collect { source ->
                 audioEngine.setSourceType(source)
                 refreshMusicSubmenus()
+                refreshAudioSourcesMenu()
+                refreshSettingsMenu()
             }
         }
         viewModelScope.launch {
@@ -168,6 +198,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             ytdlpResolverEnabledState.collect {
                 refreshAudioSourcesMenu()
+                refreshSettingsMenu()
             }
         }
         viewModelScope.launch {
@@ -215,6 +246,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         refreshMusicSubmenus()
         refreshSignInMenu()
         refreshAudioSourcesMenu()
+        refreshPresetsMenu()
         refreshSettingsMenu()
     }
 
@@ -312,7 +344,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun playAlbumByInfo(album: AlbumInfo) {
         viewModelScope.launch(Dispatchers.IO) {
-            val source = activeSource()
+            val source = if (album.id.startsWith("ytdlp_")) ytDlpSource else activeSource()
             val albumTracks = source.getTracksForAlbum(album.id)
             if (albumTracks.isNotEmpty()) {
                 source.playQueue(albumTracks, 0)
@@ -404,14 +436,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             // 3. Albums
-            val albums = source.getAlbums()
-            _coverFlowAlbumsState.value = albums
-            val albumItems = if (albums.isEmpty()) {
+            val sourceAlbums = source.getAlbums()
+            val coverFlowAlbums = if (ytdlpResolverEnabledState.value && source !is YtDlpSource) {
+                (ytDlpSource.getAlbums() + sourceAlbums).distinctBy { it.id }
+            } else {
+                sourceAlbums
+            }
+            _coverFlowAlbumsState.value = coverFlowAlbums
+            val albumItems = if (sourceAlbums.isEmpty()) {
                 listOf(
                     MenuItem("no_albums", "No Albums", subtitle = "Source: ${source.sourceType.displayName}", hasSubMenu = false)
                 )
             } else {
-                albums.map { album ->
+                sourceAlbums.map { album ->
                     MenuItem(
                         id = "album_${album.id}",
                         title = album.name,
@@ -703,16 +740,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    private fun refreshPresetsMenu() {
+        val currentTheme = selectedThemeState.value
+        val items = ThemePreset.entries.map { preset ->
+            val isSelected = preset == currentTheme
+            val radioSymbol = if (isSelected) "(●) " else "(○) "
+            MenuItem(
+                id = "preset_${preset.id}",
+                title = "$radioSymbol${preset.displayName}",
+                subtitle = if (isSelected) "Active Theme Preset" else "Tap to apply theme",
+                hasSubMenu = false,
+                rightPane = RightPaneContent.ThemePreview(preset),
+                presetToSelect = preset
+            )
+        }
+        navigationManager.registerMenu(
+            MenuState(id = "presets_menu", title = "Theme Presets", items = items)
+        )
+    }
+
     private fun refreshSettingsMenu() {
         val currentSource = activeSourceState.value
-        val isYtdlp = ytdlpResolverEnabledState.value
         val clickSound = clickSoundEnabledState.value
+        val currentTheme = selectedThemeState.value
 
         val items = listOf(
             MenuItem(
                 id = "set_themes",
                 title = "Theme Presets",
-                subtitle = selectedThemeState.value.displayName,
+                subtitle = currentTheme.displayName,
                 hasSubMenu = true,
                 rightPane = RightPaneContent.ActionPreview("Themes", "Customize hardware chassis color"),
                 targetMenuId = "presets_menu"
@@ -726,18 +782,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 targetMenuId = "audio_sources_menu"
             ),
             MenuItem(
-                id = "set_ytdlp",
-                title = "yt-dlp Stream Resolver",
-                subtitle = if (isYtdlp) "Status: Enabled (User Library Streams)" else "Status: Disabled",
-                hasSubMenu = false,
-                rightPane = RightPaneContent.ActionPreview("yt-dlp", "Direct YouTube audio stream extraction"),
-                onSelectAction = {
-                    accountManager.setYtdlpResolverEnabled(!isYtdlp)
-                    refreshSettingsMenu()
-                    refreshAudioSourcesMenu()
-                }
-            ),
-            MenuItem(
                 id = "set_click_sound",
                 title = "Click Wheel Sound Effects",
                 subtitle = if (clickSound) "Status: On (mp3)" else "Status: Muted",
@@ -746,7 +790,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 onSelectAction = {
                     viewModelScope.launch {
                         themeRepository.setClickSoundEnabled(!clickSound)
-                        refreshSettingsMenu()
                     }
                 }
             ),
@@ -972,7 +1015,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is WheelEvent.PlayPausePress -> onPlayPauseClick(null)
             is WheelEvent.MenuPress -> {
                 val currentId = currentMenuState.value.id
-                if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu")) {
+                if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu", "onboarding_menu")) {
                     onMenuClick(null)
                 }
             }

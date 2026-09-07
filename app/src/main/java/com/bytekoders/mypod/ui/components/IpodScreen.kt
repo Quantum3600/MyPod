@@ -63,6 +63,7 @@ import com.bytekoders.mypod.ui.games.MusicQuizScreen
 import com.bytekoders.mypod.ui.games.ParachuteScreen
 import com.bytekoders.mypod.ui.games.SnakeScreen
 import com.bytekoders.mypod.ui.games.SolitaireScreen
+import com.bytekoders.mypod.ui.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.SharedFlow
 
 @Composable
@@ -86,7 +87,8 @@ fun IpodScreen(
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
     geminiApiKey: String = "",
-    onSaveGeminiApiKey: ((String) -> Unit)? = null
+    onSaveGeminiApiKey: ((String) -> Unit)? = null,
+    onCompleteOnboarding: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -236,6 +238,17 @@ fun IpodScreen(
                             onSaveGeminiApiKey?.invoke(newKey)
                         },
                         onExit = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
+            }
+            "onboarding_menu" -> {
+                if (gameWheelEvents != null) {
+                    OnboardingScreen(
+                        wheelEvents = gameWheelEvents,
+                        onCompleteOnboarding = { onCompleteOnboarding?.invoke() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
