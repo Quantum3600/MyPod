@@ -2,7 +2,6 @@ package com.trishit.mypod.ui.chassis
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -14,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -61,6 +60,8 @@ fun IpodChassis(
     sensorRoll: Float = 0f,
     albums: List<AlbumInfo> = emptyList(),
     coverFlowIndex: Int = 0,
+    ytdlpAlbums: List<AlbumInfo> = emptyList(),
+    ytdlpCoverFlowIndex: Int = 0,
     onAlbumSelect: ((AlbumInfo) -> Unit)? = null,
     onPrevHold: (() -> Unit)? = null,
     onNextHold: (() -> Unit)? = null,
@@ -74,6 +75,8 @@ fun IpodChassis(
     geminiApiKey: String = "",
     onSaveGeminiApiKey: ((String) -> Unit)? = null,
     onCompleteOnboarding: (() -> Unit)? = null,
+    onVoiceSearchMain: ((String) -> Unit)? = null,
+    onVoiceSearchYtDlp: ((String) -> Unit)? = null,
 ) {
     BrushedMetalBackground(
         themePreset = themePreset,
@@ -101,11 +104,10 @@ fun IpodChassis(
 
             Column(
                 modifier = Modifier
+                    .width(contentWidth)
                     .fillMaxSize()
-                    .widthIn(max = 480.dp)
-                    .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Padding over the screen
                 Spacer(modifier = Modifier.weight(.7f))
@@ -150,6 +152,8 @@ fun IpodChassis(
                             sensorRoll = sensorRoll,
                             albums = albums,
                             coverFlowIndex = coverFlowIndex,
+                            ytdlpAlbums = ytdlpAlbums,
+                            ytdlpCoverFlowIndex = ytdlpCoverFlowIndex,
                             onAlbumSelect = onAlbumSelect,
                             gameWheelEvents = gameWheelEvents,
                             onExitGame = onExitGame,
@@ -160,6 +164,8 @@ fun IpodChassis(
                             geminiApiKey = geminiApiKey,
                             onSaveGeminiApiKey = onSaveGeminiApiKey,
                             onCompleteOnboarding = onCompleteOnboarding,
+                            onVoiceSearchMain = onVoiceSearchMain,
+                            onVoiceSearchYtDlp = onVoiceSearchYtDlp,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -190,7 +196,9 @@ fun IpodChassis(
                         onWheelEvent = onWheelEvent,
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
+
+                // Padding under the click wheel
+                Spacer(modifier = Modifier.weight(1.2f))
             }
         }
     }
@@ -203,7 +211,7 @@ fun IpodChassisPreview() {
     val menuState = navManager.currentMenu
     MyPodTheme {
         IpodChassis(
-            themePreset = ThemePreset.SILVER,
+            themePreset = ThemePreset.SPACE_GRAY,
             menuState = menuState,
             batteryState = BatteryState(levelPercentage = 85, isCharging = false),
             nowPlayingState = NowPlayingState(),
@@ -217,5 +225,3 @@ fun IpodChassisPreview() {
         )
     }
 }
-
-

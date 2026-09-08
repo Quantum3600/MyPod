@@ -5,6 +5,7 @@ import com.trishit.mypod.source.PlaybackSourceType
 import com.trishit.mypod.source.TrackMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class PlaylistRepository(context: Context) {
@@ -13,6 +14,21 @@ class PlaylistRepository(context: Context) {
     private val dao = db.playlistDao()
 
     val playlistsFlow: Flow<List<PlaylistEntity>> = dao.getAllPlaylistsFlow()
+
+    val listenedYtDlpTracksFlow: Flow<List<TrackMetadata>> = dao.getAllYtDlpListenedTracksFlow().map { list ->
+        list.map { entity ->
+            TrackMetadata(
+                id = entity.trackId,
+                title = entity.title,
+                artist = entity.artist,
+                album = entity.album,
+                mediaUri = entity.mediaUri.ifEmpty { null },
+                artUri = entity.artUri,
+                durationMs = entity.durationMs,
+                sourceType = PlaybackSourceType.YTDLP
+            )
+        }
+    }
 
     suspend fun initDefaultPlaylists() = withContext(Dispatchers.IO) {
         val existing = dao.getAllPlaylists()
@@ -43,6 +59,7 @@ class PlaylistRepository(context: Context) {
                 artist = track.artist,
                 album = track.album,
                 mediaUri = track.mediaUri ?: "",
+                artUri = track.artUri,
                 durationMs = track.durationMs,
                 sourceType = track.sourceType.name
             )
@@ -61,6 +78,7 @@ class PlaylistRepository(context: Context) {
                 artist = entity.artist,
                 album = entity.album,
                 mediaUri = entity.mediaUri.ifEmpty { null },
+                artUri = entity.artUri,
                 durationMs = entity.durationMs,
                 sourceType = try { PlaybackSourceType.valueOf(entity.sourceType) } catch (_: Exception) { PlaybackSourceType.LOCAL }
             )
@@ -77,6 +95,22 @@ class PlaylistRepository(context: Context) {
         } else {
             addTrackToPlaylist("favorites", track)
             true
+        }
+    }
+
+    suspend fun addListenedYtDlpTrack(track: TrackMetadata) = withContext(Dispatchers.IO) {
+        if (track.sourceType == PlaybackSourceType.YTDLP || track.id.startsWith("ytdlp_")) {
+            dao.insertYtDlpListenedTrack(
+                YtDlpTrackEntity(
+                    trackId = track.id,
+                    title = track.title,
+                    artist = track.artist,
+                    album = track.album,
+                    mediaUri = track.mediaUri ?: "",
+                    artUri = track.artUri,
+                    durationMs = track.durationMs
+                )
+            )
         }
     }
 }

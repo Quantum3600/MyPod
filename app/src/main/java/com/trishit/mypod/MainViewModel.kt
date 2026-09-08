@@ -71,7 +71,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val fileExplorerSource = FileExplorerSource(application, audioEngine, accountManager.userSettingsRepository)
     val spotifySource = SpotifySource(accountManager.spotifyAuthProvider, audioEngine)
     val youTubeSource = YouTubeSource(accountManager.youtubeAuthProvider, audioEngine)
-    val ytDlpSource = YtDlpSource(audioEngine, localSource)
+    val ytDlpSource = YtDlpSource(audioEngine)
     val appleMusicSource = AppleMusicSource()
 
     private val safExplorer = SafStorageExplorer(application)
@@ -91,6 +91,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _coverFlowIndexState = MutableStateFlow(0)
     val coverFlowIndexState: StateFlow<Int> = _coverFlowIndexState.asStateFlow()
+
+    private val _ytdlpCoverFlowAlbumsState = MutableStateFlow<List<AlbumInfo>>(emptyList())
+    val ytdlpCoverFlowAlbumsState: StateFlow<List<AlbumInfo>> = _ytdlpCoverFlowAlbumsState.asStateFlow()
+
+    private val _ytdlpCoverFlowIndexState = MutableStateFlow(0)
+    val ytdlpCoverFlowIndexState: StateFlow<Int> = _ytdlpCoverFlowIndexState.asStateFlow()
 
     val activeSourceState: StateFlow<PlaybackSourceType> = accountManager.activeSourceState
     val ytdlpResolverEnabledState: StateFlow<Boolean> = accountManager.ytdlpResolverEnabledState
@@ -128,7 +134,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return id in setOf(
             "brick_breaker_stub", "snake_stub", "solitaire_stub", "parachute_stub", "quiz_stub",
             "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu",
-            "onboarding_menu"
+            "onboarding_menu", "main_search_trigger", "ytdlp_search_trigger"
         )
     }
 
@@ -157,6 +163,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         tiltSensorManager.start()
+
+        ytDlpSource.onTrackPlayedListener = { track ->
+            viewModelScope.launch {
+                playlistRepository.addListenedYtDlpTrack(track)
+            }
+        }
+
+        viewModelScope.launch {
+            playlistRepository.listenedYtDlpTracksFlow.collect { listenedTracks ->
+                ytDlpSource.setListenedTracks(listenedTracks)
+                refreshYtDlpSubmenus()
+            }
+        }
 
         viewModelScope.launch {
             val completed = hasCompletedOnboardingState.first()
@@ -217,6 +236,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         _isLoadingLyricsState.value = true
                         refreshNowPlayingMenu(track)
 
+                        // Automatically record listened yt-dlp tracks into history library
+                        if (track.sourceType == PlaybackSourceType.YTDLP || track.id.startsWith("ytdlp_")) {
+                            viewModelScope.launch {
+                                playlistRepository.addListenedYtDlpTrack(track)
+                            }
+                        }
+
                         lyricsJob = viewModelScope.launch(Dispatchers.IO) {
                             val result = lyricsRepository.fetchLyrics(
                                 title = track.title,
@@ -245,6 +271,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         refreshRootMenu()
         refreshMusicSubmenus()
+        refreshYtDlpSubmenus()
         refreshSignInMenu()
         refreshAudioSourcesMenu()
         refreshPresetsMenu()
@@ -436,14 +463,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 MenuState(id = "artists_menu", title = "Artists", items = artistItems)
             )
 
-            // 3. Albums
+            // 3. Albums (pure local/active library, no ytdlp blending in normal music submenus)
             val sourceAlbums = source.getAlbums()
-            val coverFlowAlbums = if (ytdlpResolverEnabledState.value && source !is YtDlpSource) {
-                (ytDlpSource.getAlbums() + sourceAlbums).distinctBy { it.id }
-            } else {
-                sourceAlbums
-            }
-            _coverFlowAlbumsState.value = coverFlowAlbums
+            _coverFlowAlbumsState.value = sourceAlbums
             val albumItems = if (sourceAlbums.isEmpty()) {
                 listOf(
                     MenuItem("no_albums", "No Albums", subtitle = "Source: ${source.sourceType.displayName}", hasSubMenu = false)
@@ -504,6 +526,323 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             navigationManager.registerMenu(
                 MenuState(id = "genres_menu", title = "Genres", items = genreItems)
             )
+        }
+    }
+
+    fun refreshYtDlpSubmenus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val tracks = ytDlpSource.getTracks()
+            val albums = ytDlpSource.getAlbums()
+            val artists = ytDlpSource.getArtists()
+            val playlists = ytDlpSource.getPlaylists()
+
+            _ytdlpCoverFlowAlbumsState.value = albums
+
+            // 1. Songs
+            val songItems = if (tracks.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "empty_ytdlp_songs",
+                        title = "No Songs Available",
+                        subtitle = "Use Voice Search or Top Songs",
+                        hasSubMenu = false,
+                        rightPane = RightPaneContent.ActionPreview("yt-dlp", "Search or fetch Top Songs to add tracks.")
+                    )
+                )
+            } else {
+                tracks.mapIndexed { idx, trk ->
+                    MenuItem(
+                        id = "ytdlp_trk_${trk.id}",
+                        title = trk.title,
+                        subtitle = "${trk.artist} • ${trk.album}",
+                        hasSubMenu = false,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                ytDlpSource.playQueue(tracks, idx)
+                                navigationManager.navigateToNowPlaying()
+                            }
+                        }
+                    )
+                }
+            }
+            navigationManager.registerMenu(
+                MenuState(id = "ytdlp_songs_menu", title = "yt-dlp Songs", items = songItems)
+            )
+
+            // 2. Playlists
+            val playlistItems = if (playlists.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "empty_ytdlp_pl",
+                        title = "No Playlists Available",
+                        subtitle = "Use Voice Search or Top Songs",
+                        hasSubMenu = false
+                    )
+                )
+            } else {
+                playlists.map { pl ->
+                    MenuItem(
+                        id = "ytdlp_pl_${pl.id}",
+                        title = pl.name,
+                        subtitle = "${pl.trackCount} Songs",
+                        hasSubMenu = true,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                val plTracks = ytDlpSource.getTracksForPlaylist(pl.id)
+                                val subItems = plTracks.mapIndexed { idx, trk ->
+                                    MenuItem(
+                                        id = "ytdlp_pl_trk_${trk.id}",
+                                        title = trk.title,
+                                        subtitle = trk.artist,
+                                        hasSubMenu = false,
+                                        onSelectAction = {
+                                            viewModelScope.launch {
+                                                ytDlpSource.playQueue(plTracks, idx)
+                                                navigationManager.navigateToNowPlaying()
+                                            }
+                                        }
+                                    )
+                                }
+                                navigationManager.pushMenu(
+                                    MenuState(id = "ytdlp_pl_items_${pl.id}", title = pl.name, items = subItems)
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+            navigationManager.registerMenu(
+                MenuState(id = "ytdlp_playlists_menu", title = "yt-dlp Playlists", items = playlistItems)
+            )
+
+            // 3. Albums
+            val albumItems = if (albums.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "empty_ytdlp_alb",
+                        title = "No Albums Available",
+                        subtitle = "Use Voice Search or Top Songs",
+                        hasSubMenu = false
+                    )
+                )
+            } else {
+                albums.map { alb ->
+                    MenuItem(
+                        id = "ytdlp_alb_${alb.id}",
+                        title = alb.name,
+                        subtitle = "${alb.artist} • ${alb.trackCount} Tracks",
+                        hasSubMenu = true,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                val albTracks = ytDlpSource.getTracksForAlbum(alb.id)
+                                val subItems = albTracks.mapIndexed { idx, trk ->
+                                    MenuItem(
+                                        id = "ytdlp_alb_trk_${trk.id}",
+                                        title = trk.title,
+                                        subtitle = trk.artist,
+                                        hasSubMenu = false,
+                                        onSelectAction = {
+                                            viewModelScope.launch {
+                                                ytDlpSource.playQueue(albTracks, idx)
+                                                navigationManager.navigateToNowPlaying()
+                                            }
+                                        }
+                                    )
+                                }
+                                navigationManager.pushMenu(
+                                    MenuState(id = "ytdlp_alb_items_${alb.id}", title = alb.name, items = subItems)
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+            navigationManager.registerMenu(
+                MenuState(id = "ytdlp_albums_menu", title = "yt-dlp Albums", items = albumItems)
+            )
+
+            // 4. Artists
+            val artistItems = if (artists.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "empty_ytdlp_art",
+                        title = "No Artists Available",
+                        subtitle = "Use Voice Search or Top Songs",
+                        hasSubMenu = false
+                    )
+                )
+            } else {
+                artists.map { art ->
+                    MenuItem(
+                        id = "ytdlp_art_$art",
+                        title = art,
+                        hasSubMenu = true,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                val artTracks = ytDlpSource.getTracksForArtist(art)
+                                val subItems = artTracks.mapIndexed { idx, trk ->
+                                    MenuItem(
+                                        id = "ytdlp_art_trk_${trk.id}",
+                                        title = trk.title,
+                                        subtitle = trk.album,
+                                        hasSubMenu = false,
+                                        onSelectAction = {
+                                            viewModelScope.launch {
+                                                ytDlpSource.playQueue(artTracks, idx)
+                                                navigationManager.navigateToNowPlaying()
+                                            }
+                                        }
+                                    )
+                                }
+                                navigationManager.pushMenu(
+                                    MenuState(id = "ytdlp_art_items_$art", title = art, items = subItems)
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+            navigationManager.registerMenu(
+                MenuState(id = "ytdlp_artists_menu", title = "yt-dlp Artists", items = artistItems)
+            )
+
+            // Update main yt-dlp menu subtitles and trigger action
+            val ytdlpMenu = navigationManager.getMenu("ytdlp_menu")
+            if (ytdlpMenu != null) {
+                val updatedYtdlpItems = ytdlpMenu.items.map { item ->
+                    when (item.id) {
+                        "ytdlp_songs" -> item.copy(subtitle = "${tracks.size} Songs")
+                        "ytdlp_playlists" -> item.copy(subtitle = "${playlists.size} Playlists")
+                        "ytdlp_albums" -> item.copy(subtitle = "${albums.size} Albums")
+                        "ytdlp_artists" -> item.copy(subtitle = "${artists.size} Artists")
+                        "ytdlp_top_songs" -> item.copy(onSelectAction = { fetchYtDlpTopSongs() })
+                        else -> item
+                    }
+                }
+                navigationManager.registerMenu(ytdlpMenu.copy(items = updatedYtdlpItems))
+            }
+        }
+    }
+
+    fun onVoiceSearchMain(query: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val tracks = localSource.getTracks()
+            val matchingTracks = tracks.filter { trk ->
+                trk.title.contains(query, ignoreCase = true) ||
+                trk.artist.contains(query, ignoreCase = true) ||
+                trk.album.contains(query, ignoreCase = true)
+            }
+
+            val items = if (matchingTracks.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "no_search_results",
+                        title = "No Local Songs Found",
+                        subtitle = "Query: '$query'",
+                        hasSubMenu = false
+                    )
+                )
+            } else {
+                matchingTracks.mapIndexed { idx, trk ->
+                    MenuItem(
+                        id = "srch_trk_${trk.id}",
+                        title = trk.title,
+                        subtitle = "${trk.artist} • ${trk.album}",
+                        hasSubMenu = false,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                localSource.playQueue(matchingTracks, idx)
+                                navigationManager.navigateToNowPlaying()
+                            }
+                        }
+                    )
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                navigationManager.pushMenu(
+                    MenuState(
+                        id = "main_search_results",
+                        title = "Search: '$query'",
+                        items = items
+                    )
+                )
+            }
+        }
+    }
+
+    fun onVoiceSearchYtDlp(query: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val results = ytDlpSource.search(query)
+            refreshYtDlpSubmenus()
+
+            val items = if (results.isEmpty()) {
+                listOf(
+                    MenuItem(
+                        id = "no_ytdlp_results",
+                        title = "No YouTube Results",
+                        subtitle = "Query: '$query'",
+                        hasSubMenu = false
+                    )
+                )
+            } else {
+                results.mapIndexed { idx, trk ->
+                    MenuItem(
+                        id = "ytdlp_srch_trk_${trk.id}",
+                        title = trk.title,
+                        subtitle = "${trk.artist} • ${trk.album}",
+                        hasSubMenu = false,
+                        onSelectAction = {
+                            viewModelScope.launch {
+                                ytDlpSource.playQueue(results, idx)
+                                navigationManager.navigateToNowPlaying()
+                            }
+                        }
+                    )
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                navigationManager.pushMenu(
+                    MenuState(
+                        id = "ytdlp_search_results",
+                        title = "yt-dlp: '$query'",
+                        items = items
+                    )
+                )
+            }
+        }
+    }
+
+    fun fetchYtDlpTopSongs() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val topSongs = ytDlpSource.fetchTopSongs()
+            refreshYtDlpSubmenus()
+
+            val items = topSongs.mapIndexed { idx, trk ->
+                MenuItem(
+                    id = "ytdlp_top_trk_${trk.id}",
+                    title = trk.title,
+                    subtitle = "${trk.artist} • ${trk.album}",
+                    hasSubMenu = false,
+                    onSelectAction = {
+                        viewModelScope.launch {
+                            ytDlpSource.playQueue(topSongs, idx)
+                            navigationManager.navigateToNowPlaying()
+                        }
+                    }
+                )
+            }
+
+            withContext(Dispatchers.Main) {
+                navigationManager.pushMenu(
+                    MenuState(
+                        id = "ytdlp_top_songs_list",
+                        title = "YouTube Top Songs",
+                        items = items
+                    )
+                )
+            }
         }
     }
 
@@ -853,7 +1192,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 MenuItem(
                     id = "np_add_to_playlist",
                     title = "➕ Add to Playlist...",
-                    subtitle = "Save track to a playlist",
+                    subtitle = "Save track to a custom playlist",
                     hasSubMenu = true,
                     rightPane = RightPaneContent.ActionPreview("Playlists", track.title),
                     onSelectAction = {
@@ -934,6 +1273,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun playPlaylistTrack(tracks: List<TrackMetadata>, index: Int) {
+        if (tracks.isEmpty()) return
+        val startTrack = tracks[index.coerceIn(tracks.indices)]
+        viewModelScope.launch {
+            if (startTrack.sourceType == PlaybackSourceType.YTDLP || startTrack.id.startsWith("ytdlp_")) {
+                ytDlpSource.playQueue(tracks, index)
+            } else if (startTrack.sourceType == PlaybackSourceType.FILES) {
+                fileExplorerSource.playQueue(tracks, index)
+            } else {
+                localSource.playQueue(tracks, index)
+            }
+            withContext(Dispatchers.Main) {
+                navigationManager.navigateToNowPlaying()
+            }
+        }
+    }
+
     private fun refreshPlaylistsMenu(playlists: List<PlaylistEntity>) {
         viewModelScope.launch {
             val items = mutableListOf<MenuItem>()
@@ -983,10 +1339,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                             subtitle = "${trk.artist} • ${trk.album}",
                                             hasSubMenu = false,
                                             onSelectAction = {
-                                                viewModelScope.launch {
-                                                    audioEngine.playQueue(currentPlTracks, idx)
-                                                    navigationManager.navigateToNowPlaying()
-                                                }
+                                                playPlaylistTrack(currentPlTracks, idx)
                                             }
                                         )
                                     }
@@ -1016,7 +1369,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is WheelEvent.PlayPausePress -> onPlayPauseClick(null)
             is WheelEvent.MenuPress -> {
                 val currentId = currentMenuState.value.id
-                if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu", "onboarding_menu")) {
+                if (currentId !in setOf("solitaire_stub", "clock_menu", "calendar_menu", "recorder_menu", "camera_menu", "gemini_chat_menu", "onboarding_menu", "main_search_trigger", "ytdlp_search_trigger")) {
                     if (event.isHold) {
                         triggerDetentTick(null)
                         navigationManager.popToRoot()
@@ -1045,6 +1398,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 while (newIndex < 0) newIndex += count
                 _coverFlowIndexState.value = newIndex % count
             }
+            "ytdlp_cover_flow_menu" -> {
+                val albums = _ytdlpCoverFlowAlbumsState.value
+                val count = if (albums.isEmpty()) 4 else albums.size
+                var newIndex = _ytdlpCoverFlowIndexState.value + detents
+                while (newIndex < 0) newIndex += count
+                _ytdlpCoverFlowIndexState.value = newIndex % count
+            }
             else -> {
                 navigationManager.scrollByDetents(detents)
             }
@@ -1072,6 +1432,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val albums = _coverFlowAlbumsState.value
                 if (albums.isNotEmpty()) {
                     val selectedAlbum = albums[_coverFlowIndexState.value.coerceIn(0, albums.lastIndex)]
+                    playAlbumByInfo(selectedAlbum)
+                } else {
+                    navigationManager.navigateToNowPlaying()
+                }
+                return
+            }
+            "ytdlp_cover_flow_menu" -> {
+                val albums = _ytdlpCoverFlowAlbumsState.value
+                if (albums.isNotEmpty()) {
+                    val selectedAlbum = albums[_ytdlpCoverFlowIndexState.value.coerceIn(0, albums.lastIndex)]
                     playAlbumByInfo(selectedAlbum)
                 } else {
                     navigationManager.navigateToNowPlaying()
@@ -1145,7 +1515,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 result = value
                 throw CancellationException()
             }
-        } catch (_: CancellationException) {}
+        } catch (_: Exception) {}
         return result
     }
 

@@ -150,7 +150,7 @@ fun MusicQuizScreen(
     wheelEvents: SharedFlow<WheelEvent>,
     tracks: List<TrackMetadata> = emptyList(),
     onPlaySnippet: ((TrackMetadata) -> Unit)? = null,
-
+    onExitGame: (() -> Unit)? = null
 ) {
     val gameState = remember(tracks) { MusicQuizGameState(tracks) }
 

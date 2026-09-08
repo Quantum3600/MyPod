@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [PlaylistEntity::class, PlaylistTrackEntity::class], version = 1, exportSchema = false)
+@Database(entities = [PlaylistEntity::class, PlaylistTrackEntity::class, YtDlpTrackEntity::class], version = 2, exportSchema = false)
 abstract class PlaylistDatabase : RoomDatabase() {
 
     abstract fun playlistDao(): PlaylistDao
@@ -20,7 +20,9 @@ abstract class PlaylistDatabase : RoomDatabase() {
                     context.applicationContext,
                     PlaylistDatabase::class.java,
                     "playlist_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(true)
+                    .build()
                 INSTANCE = instance
                 instance
             }

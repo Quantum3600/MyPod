@@ -1,6 +1,5 @@
 package com.trishit.mypod.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +46,7 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.delay
 import com.trishit.mypod.data.lyrics.LyricsResult
+import com.trishit.mypod.navigation.MenuItem
 import com.trishit.mypod.navigation.MenuState
 import com.trishit.mypod.navigation.RightPaneContent
 import com.trishit.mypod.source.AlbumInfo
@@ -65,7 +64,6 @@ import com.trishit.mypod.ui.games.SnakeScreen
 import com.trishit.mypod.ui.games.SolitaireScreen
 import com.trishit.mypod.ui.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.SharedFlow
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun IpodScreen(
@@ -80,6 +78,8 @@ fun IpodScreen(
     sensorRoll: Float = 0f,
     albums: List<AlbumInfo> = emptyList(),
     coverFlowIndex: Int = 0,
+    ytdlpAlbums: List<AlbumInfo> = emptyList(),
+    ytdlpCoverFlowIndex: Int = 0,
     onAlbumSelect: ((AlbumInfo) -> Unit)? = null,
     gameWheelEvents: SharedFlow<WheelEvent>? = null,
     onExitGame: (() -> Unit)? = null,
@@ -89,7 +89,9 @@ fun IpodScreen(
     onToggleFavorite: (() -> Unit)? = null,
     geminiApiKey: String = "",
     onSaveGeminiApiKey: ((String) -> Unit)? = null,
-    onCompleteOnboarding: (() -> Unit)? = null
+    onCompleteOnboarding: (() -> Unit)? = null,
+    onVoiceSearchMain: ((String) -> Unit)? = null,
+    onVoiceSearchYtDlp: ((String) -> Unit)? = null
 ) {
     Column(
         modifier = modifier
@@ -106,7 +108,6 @@ fun IpodScreen(
 
         when (menuState.id) {
             "now_playing_menu" -> {
-                // Full Screen Now Playing view occupying full height of body area beneath top status bar
                 NowPlayingScreen(
                     state = nowPlayingState,
                     lyricsResult = lyricsResult,
@@ -121,10 +122,21 @@ fun IpodScreen(
                 )
             }
             "cover_flow_menu" -> {
-                // Interactive 3D Cover Flow album visualizer occupying full height
                 CoverFlowScreen(
                     albums = albums,
                     selectedIndex = coverFlowIndex,
+                    onAlbumSelect = { album ->
+                        onAlbumSelect?.invoke(album)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            }
+            "ytdlp_cover_flow_menu" -> {
+                CoverFlowScreen(
+                    albums = ytdlpAlbums,
+                    selectedIndex = ytdlpCoverFlowIndex,
                     onAlbumSelect = { album ->
                         onAlbumSelect?.invoke(album)
                     },
@@ -256,55 +268,62 @@ fun IpodScreen(
                     )
                 }
             }
+            "main_search_trigger" -> {
+                VoiceSearchScreen(
+                    searchTargetTitle = "Local Music",
+                    onResultFound = { query ->
+                        onVoiceSearchMain?.invoke(query)
+                    },
+                    onCancel = { onExitGame?.invoke() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            }
+            "ytdlp_search_trigger" -> {
+                VoiceSearchScreen(
+                    searchTargetTitle = "yt-dlp YouTube",
+                    onResultFound = { query ->
+                        onVoiceSearchYtDlp?.invoke(query)
+                    },
+                    onCancel = { onExitGame?.invoke() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            }
             else -> {
-                // Two-Pane Content Split Area occupying full height beneath top status bar
+                // Two-Pane Content Split Area
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                 ) {
-                    // Left Pane: Menu Items List
-                    Box(
+                    // Left Pane - iPod Classic Menu List (occupies left half)
+                    MenuList(
+                        menuState = menuState,
                         modifier = Modifier
-                            .weight(0.53f)
+                            .weight(1f)
                             .fillMaxHeight()
-                            .background(Color.White)
-                    ) {
-                        IpodMenuList(menuState = menuState)
-                    }
-
-                    // Vertical Separator Line
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .fillMaxHeight()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color(0xFFD0D0D5),
-                                        Color(0xFFB0B0B5),
-                                        Color(0xFFD0D0D5)
-                                    )
-                                )
-                            )
                     )
 
-                    // Right Pane: Dynamic Graphic / Artwork / Preview
-                    val activeItem = if (menuState.items.isNotEmpty()) {
-                        val idx = menuState.selectedIndex.coerceIn(0, menuState.items.lastIndex)
-                        menuState.items[idx]
-                    } else null
-
+                    // Vertical Split Divider line matching classical dark gray bezel
                     Box(
                         modifier = Modifier
-                            .weight(0.47f)
                             .fillMaxHeight()
-                    ) {
-                        RightPanePreview(
-                            content = activeItem?.rightPane ?: RightPaneContent.DefaultArtwork,
-                            nowPlayingState = nowPlayingState
-                        )
-                    }
+                            .width(1.dp)
+                            .background(Color(0xFFB0B0B0))
+                    )
+
+                    // Right Pane - Dynamic Graphic Context / Album Artwork (occupies right half)
+                    RightPanePreview(
+                        content = menuState.items.getOrNull(menuState.selectedIndex)?.rightPane
+                            ?: RightPaneContent.DefaultArtwork,
+                        nowPlayingState = nowPlayingState,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    )
                 }
             }
         }
@@ -312,141 +331,136 @@ fun IpodScreen(
 }
 
 @Composable
-private fun IpodStatusBar(
+fun IpodStatusBar(
     title: String,
     batteryState: BatteryState,
     isPlaying: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var currentTimeString by remember { mutableStateOf("") }
+    val gradientBrush = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFFD0D7DE),
+            Color(0xFFB8C2CC),
+            Color(0xFFA2B0BC)
+        )
+    )
 
+    var currentTimeString by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
         while (true) {
-            currentTimeString = formatter.format(Date())
-            delay(1000L.milliseconds)
+            currentTimeString = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+            delay(10000L)
         }
     }
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
             .height(24.dp)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFE8ECEF),
-                        Color(0xFFC8CED4)
-                    )
-                )
-            )
-            .padding(horizontal = 8.dp),
-        contentAlignment = Alignment.Center
+            .background(brush = gradientBrush)
+            .border(width = 0.5.dp, color = Color(0xFF808E9B))
+            .padding(horizontal = 6.dp)
     ) {
-        // Left: Title constrained to max 35% width so long titles never overlap center time
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.35f)
-                .align(Alignment.CenterStart),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF222222),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        // Center: Time Display
-        if (currentTimeString.isNotEmpty()) {
-            Text(
-                text = currentTimeString,
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF222222),
-                maxLines = 1,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-
-        // Right: Play/Pause status icon directly beside battery indicator
         Row(
-            modifier = Modifier.align(Alignment.CenterEnd),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Play arrow when playing, Pause bars when paused
-            val glyphIcon = if (isPlaying) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
-            val glyphColor = if (isPlaying) Color(0xFF1E5BB5) else Color(0xFF444444)
-
-            Icon(
-                imageVector = glyphIcon,
-                contentDescription = if (isPlaying) "Playing" else "Paused",
-                tint = glyphColor,
-                modifier = Modifier.size(15.dp)
-            )
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            if (batteryState.isCharging) {
-                Icon(
-                    imageVector = Icons.Rounded.Bolt,
-                    contentDescription = "Charging",
-                    tint = Color(0xFF2E7D32),
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
+            // Left Status Icon (Play / Pause Indicator)
+            Box(
+                modifier = Modifier.size(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isPlaying) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = "Playing",
+                        tint = Color(0xFF1E272C),
+                        modifier = Modifier.size(14.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.Pause,
+                        contentDescription = "Paused",
+                        tint = Color(0xFF576574),
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
 
-            // Battery Gauge Box
-            Box(
-                modifier = Modifier
-                    .size(width = 22.dp, height = 11.dp)
-                    .border(1.dp, Color(0xFF444444), RoundedCornerShape(2.dp))
-                    .padding(1.dp)
+            // Center Title Text with Current Time
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
-                val fillFraction = (batteryState.levelPercentage / 100f).coerceIn(0.05f, 1f)
-                val barColor = when {
-                    batteryState.isCharging -> Color(0xFF4CAF50)
-                    batteryState.levelPercentage <= 20 -> Color(0xFFE53935)
-                    else -> Color(0xFF2E7D32)
+                Text(
+                    text = title,
+                    color = Color(0xFF101820),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (currentTimeString.isNotBlank()) {
+                    Text(
+                        text = " • $currentTimeString",
+                        color = Color(0xFF334155),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1
+                    )
                 }
+            }
 
+            // Right Status Graphic (iPod Classic Battery Bar)
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (batteryState.isCharging) {
+                    Icon(
+                        imageVector = Icons.Rounded.Bolt,
+                        contentDescription = "Charging",
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(fillFraction)
-                        .clip(RoundedCornerShape(1.dp))
-                        .background(barColor)
+                        .width(22.dp)
+                        .height(10.dp)
+                        .border(1.dp, Color(0xFF2C3E50), RoundedCornerShape(2.dp))
+                        .padding(1.dp)
+                ) {
+                    val fillRatio = (batteryState.levelPercentage / 100f).coerceIn(0f, 1f)
+                    val barColor = when {
+                        batteryState.isCharging -> Color(0xFF4CAF50)
+                        batteryState.levelPercentage > 20 -> Color(0xFF4CAF50)
+                        else -> Color(0xFFE53935)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fillRatio)
+                            .background(barColor, RoundedCornerShape(1.dp))
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(4.dp)
+                        .background(Color(0xFF2C3E50))
                 )
             }
-            // Battery Tip
-            Box(
-                modifier = Modifier
-                    .size(width = 1.5.dp, height = 4.dp)
-                    .background(Color(0xFF444444), RoundedCornerShape(topEnd = 1.dp, bottomEnd = 1.dp))
-            )
-        }
-
-        // Bottom border line on status bar
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawLine(
-                color = Color(0xFF9E9E9E),
-                start = Offset(0f, size.height),
-                end = Offset(size.width, size.height),
-                strokeWidth = 1f
-            )
         }
     }
 }
 
 @Composable
-private fun IpodMenuList(menuState: MenuState) {
+fun MenuList(
+    menuState: MenuState,
+    modifier: Modifier = Modifier
+) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll list as selectedIndex changes
     LaunchedEffect(menuState.selectedIndex) {
         if (menuState.items.isNotEmpty()) {
             val targetIdx = menuState.selectedIndex.coerceIn(0, menuState.items.lastIndex)
@@ -456,101 +470,82 @@ private fun IpodMenuList(menuState: MenuState) {
 
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.background(Color.White)
     ) {
         itemsIndexed(menuState.items) { index, item ->
             val isSelected = index == menuState.selectedIndex
+            MenuItemRow(item = item, isSelected = isSelected)
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(24.dp)
-                    .background(
-                        if (isSelected) {
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF3F82DB),
-                                    Color(0xFF1E5BB5),
-                                    Color(0xFF104192)
-                                )
-                            )
-                        } else {
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFFFFFFFF),
-                                    Color(0xFFFAFAFA)
-                                )
-                            )
-                        }
-                    )
-                    .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        val textColor = when {
-                            !item.isEnabled && isSelected -> Color(0xFFDDDDDD)
-                            !item.isEnabled -> Color(0xFF888888)
-                            isSelected -> Color.White
-                            else -> Color(0xFF111111)
-                        }
-                        val subColor = when {
-                            !item.isEnabled && isSelected -> Color(0xFFCCCCCC)
-                            !item.isEnabled -> Color(0xFFAAAAAA)
-                            isSelected -> Color.White.copy(alpha = 0.8f)
-                            else -> Color(0xFF777777)
-                        }
+@Composable
+fun MenuItemRow(
+    item: MenuItem,
+    isSelected: Boolean
+) {
+    val backgroundBrush = if (isSelected) {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF3882C7),
+                Color(0xFF1E528B)
+            )
+        )
+    } else {
+        Brush.verticalGradient(
+            colors = listOf(Color.White, Color.White)
+        )
+    }
 
-                        Text(
-                            text = item.title,
-                            fontSize = 11.5.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = textColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (item.subtitle != null && !isSelected) {
-                            Text(
-                                text = item.subtitle,
-                                fontSize = 8.5.sp,
-                                color = subColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+    val textColor = if (isSelected) Color.White else Color(0xFF111111)
+    val subtitleColor = if (isSelected) Color(0xFFE0E0E0) else Color(0xFF666666)
 
-                    if (item.hasSubMenu) {
-                        val arrowTint = when {
-                            !item.isEnabled -> Color(0xFFAAAAAA)
-                            isSelected -> Color.White
-                            else -> Color(0xFF888888)
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                            contentDescription = "Navigate",
-                            tint = arrowTint,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+    val rowHeight = if (item.subtitle != null) 34.dp else 26.dp
 
-                // Subtle bottom hairline divider for unselected rows
-                if (!isSelected) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawLine(
-                            color = Color(0xFFEEEEEE),
-                            start = Offset(0f, size.height),
-                            end = Offset(size.width, size.height),
-                            strokeWidth = 1f
-                        )
-                    }
-                }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(rowHeight)
+            .background(brush = backgroundBrush)
+            .border(
+                width = 0.5.dp,
+                color = if (isSelected) Color(0xFF163E6B) else Color(0xFFEFEFEF)
+            )
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = item.title,
+                color = textColor,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            item.subtitle?.let { sub ->
+                Text(
+                    text = sub,
+                    color = subtitleColor,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+        }
+
+        if (item.hasSubMenu) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = "Submenu",
+                tint = if (isSelected) Color.White else Color(0xFF888888),
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }

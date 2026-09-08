@@ -38,4 +38,14 @@ interface PlaylistDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM playlist_tracks WHERE playlistId = 'favorites' AND trackId = :trackId)")
     suspend fun isFavorite(trackId: String): Boolean
+
+    // yt-dlp Listened Library Queries
+    @Query("SELECT * FROM ytdlp_listened_tracks ORDER BY listenedAt DESC")
+    fun getAllYtDlpListenedTracksFlow(): Flow<List<YtDlpTrackEntity>>
+
+    @Query("SELECT * FROM ytdlp_listened_tracks ORDER BY listenedAt DESC")
+    suspend fun getAllYtDlpListenedTracks(): List<YtDlpTrackEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertYtDlpListenedTrack(track: YtDlpTrackEntity)
 }

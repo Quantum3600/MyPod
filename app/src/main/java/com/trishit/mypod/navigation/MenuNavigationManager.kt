@@ -194,6 +194,13 @@ class MenuNavigationManager {
             title = "iPod",
             items = listOf(
                 MenuItem(
+                    id = "main_search",
+                    title = "Search",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Search", "Voice Search local music library."),
+                    targetMenuId = "main_search_trigger"
+                ),
+                MenuItem(
                     id = "now_playing",
                     title = "Now Playing",
                     hasSubMenu = true,
@@ -258,6 +265,14 @@ class MenuNavigationManager {
             title = "Music",
             items = listOf(
                 MenuItem(
+                    id = "ytdlp_music",
+                    title = "yt-dlp",
+                    subtitle = "YouTube Online",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp", "YouTube Music & Stream Search"),
+                    targetMenuId = "ytdlp_menu"
+                ),
+                MenuItem(
                     id = "cover_flow_music",
                     title = "Cover Flow",
                     subtitle = "3D Album Visualizer",
@@ -315,6 +330,131 @@ class MenuNavigationManager {
                     hasSubMenu = true,
                     rightPane = RightPaneContent.ActionPreview("Storage", "Browse audio files using Android Storage Access Framework."),
                     targetMenuId = "files_menu"
+                )
+            )
+        )
+
+        // Dedicated yt-dlp Menu
+        map["ytdlp_menu"] = MenuState(
+            id = "ytdlp_menu",
+            title = "yt-dlp",
+            items = listOf(
+                MenuItem(
+                    id = "ytdlp_cover_flow",
+                    title = "Cover Flow",
+                    subtitle = "3D Album Visualizer",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Cover Flow", "Interactive 3D album visualizer for yt-dlp albums."),
+                    targetMenuId = "ytdlp_cover_flow_menu"
+                ),
+                MenuItem(
+                    id = "ytdlp_search",
+                    title = "Search",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp Search", "Voice Search YouTube online"),
+                    targetMenuId = "ytdlp_search_trigger"
+                ),
+                MenuItem(
+                    id = "ytdlp_top_songs",
+                    title = "Top Songs",
+                    subtitle = "YouTube Music Charts",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.ActionPreview("Top Songs", "Fetch YouTube Music top hits"),
+                    targetMenuId = "ytdlp_top_songs_trigger"
+                ),
+                MenuItem(
+                    id = "ytdlp_songs",
+                    title = "Songs",
+                    subtitle = "0 Songs",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.MusicCategory("yt-dlp Songs"),
+                    targetMenuId = "ytdlp_songs_menu"
+                ),
+                MenuItem(
+                    id = "ytdlp_playlists",
+                    title = "Playlists",
+                    subtitle = "0 Playlists",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.MusicCategory("yt-dlp Playlists"),
+                    targetMenuId = "ytdlp_playlists_menu"
+                ),
+                MenuItem(
+                    id = "ytdlp_albums",
+                    title = "Albums",
+                    subtitle = "0 Albums",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.MusicCategory("yt-dlp Albums"),
+                    targetMenuId = "ytdlp_albums_menu"
+                ),
+                MenuItem(
+                    id = "ytdlp_artists",
+                    title = "Artists",
+                    subtitle = "0 Artists",
+                    hasSubMenu = true,
+                    rightPane = RightPaneContent.MusicCategory("yt-dlp Artists"),
+                    targetMenuId = "ytdlp_artists_menu"
+                )
+            )
+        )
+
+        map["ytdlp_cover_flow_menu"] = MenuState(
+            id = "ytdlp_cover_flow_menu",
+            title = "Cover Flow",
+            items = emptyList()
+        )
+
+        map["ytdlp_songs_menu"] = MenuState(
+            id = "ytdlp_songs_menu",
+            title = "yt-dlp Songs",
+            items = listOf(
+                MenuItem(
+                    id = "empty_ytdlp_songs",
+                    title = "No Songs Available",
+                    subtitle = "Use Voice Search or Top Songs",
+                    hasSubMenu = false,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp", "Search or fetch Top Songs to add tracks.")
+                )
+            )
+        )
+
+        map["ytdlp_playlists_menu"] = MenuState(
+            id = "ytdlp_playlists_menu",
+            title = "yt-dlp Playlists",
+            items = listOf(
+                MenuItem(
+                    id = "empty_ytdlp_pl",
+                    title = "No Playlists Available",
+                    subtitle = "Use Voice Search or Top Songs",
+                    hasSubMenu = false,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp", "Fetch playlists or search online.")
+                )
+            )
+        )
+
+        map["ytdlp_albums_menu"] = MenuState(
+            id = "ytdlp_albums_menu",
+            title = "yt-dlp Albums",
+            items = listOf(
+                MenuItem(
+                    id = "empty_ytdlp_alb",
+                    title = "No Albums Available",
+                    subtitle = "Use Voice Search or Top Songs",
+                    hasSubMenu = false,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp", "Search YouTube or fetch top albums.")
+                )
+            )
+        )
+
+        map["ytdlp_artists_menu"] = MenuState(
+            id = "ytdlp_artists_menu",
+            title = "yt-dlp Artists",
+            items = listOf(
+                MenuItem(
+                    id = "empty_ytdlp_art",
+                    title = "No Artists Available",
+                    subtitle = "Use Voice Search or Top Songs",
+                    hasSubMenu = false,
+                    rightPane = RightPaneContent.ActionPreview("yt-dlp", "Search YouTube to discover artists.")
                 )
             )
         )

@@ -95,6 +95,8 @@ fun MyPodApp(
     val tiltState by viewModel.tiltSensorState.collectAsStateWithLifecycle()
     val coverFlowAlbums by viewModel.coverFlowAlbumsState.collectAsStateWithLifecycle()
     val coverFlowIndex by viewModel.coverFlowIndexState.collectAsStateWithLifecycle()
+    val ytdlpCoverFlowAlbums by viewModel.ytdlpCoverFlowAlbumsState.collectAsStateWithLifecycle()
+    val ytdlpCoverFlowIndex by viewModel.ytdlpCoverFlowIndexState.collectAsStateWithLifecycle()
     val quizTracks by viewModel.quizTracksState.collectAsStateWithLifecycle()
     val isFavorite by viewModel.isFavoriteState.collectAsStateWithLifecycle()
     val geminiApiKey by viewModel.geminiApiKeyState.collectAsStateWithLifecycle()
@@ -138,6 +140,8 @@ fun MyPodApp(
             sensorRoll = tiltState.second,
             albums = coverFlowAlbums,
             coverFlowIndex = coverFlowIndex,
+            ytdlpAlbums = ytdlpCoverFlowAlbums,
+            ytdlpCoverFlowIndex = ytdlpCoverFlowIndex,
             onAlbumSelect = { album ->
                 viewModel.playAlbumByInfo(album)
             },
@@ -190,6 +194,12 @@ fun MyPodApp(
             onCompleteOnboarding = {
                 viewModel.completeOnboarding()
             },
+            onVoiceSearchMain = { query ->
+                viewModel.onVoiceSearchMain(query)
+            },
+            onVoiceSearchYtDlp = { query ->
+                viewModel.onVoiceSearchYtDlp(query)
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -218,4 +228,3 @@ fun IpodChassisPreview() {
         )
     }
 }
-

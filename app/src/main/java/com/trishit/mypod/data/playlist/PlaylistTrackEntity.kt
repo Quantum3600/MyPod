@@ -12,6 +12,7 @@ data class PlaylistTrackEntity(
     val artist: String,
     val album: String,
     val mediaUri: String,
+    val artUri: String? = null,
     val durationMs: Long,
     val sourceType: String = "LOCAL",
     val addedAt: Long = System.currentTimeMillis()
