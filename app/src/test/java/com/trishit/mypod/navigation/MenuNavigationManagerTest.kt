@@ -188,4 +188,24 @@ class MenuNavigationManagerTest {
         assertTrue("camera" in itemIds)
         assertTrue("gemini_chat" in itemIds)
     }
+
+    @Test
+    fun `replaceTopMenu replaces active menu on stack without increasing stack depth`() {
+        val menu1 = MenuState(id = "menu_1", title = "Menu 1", items = listOf(MenuItem(id = "a", title = "A")))
+        val menu2 = MenuState(id = "menu_2", title = "Menu 2", items = listOf(MenuItem(id = "b", title = "B")))
+
+        navManager.pushMenu(menu1)
+        assertEquals(2, navManager.navigationStack.value.size)
+        assertEquals("menu_1", navManager.currentMenu.id)
+
+        navManager.replaceTopMenu(menu2)
+        assertEquals(2, navManager.navigationStack.value.size)
+        assertEquals("menu_2", navManager.currentMenu.id)
+
+        // Popping menu2 returns directly to root
+        val popped = navManager.onMenuButtonClicked()
+        assertTrue(popped)
+        assertEquals(1, navManager.navigationStack.value.size)
+        assertEquals("root", navManager.currentMenu.id)
+    }
 }

@@ -94,6 +94,17 @@ class MenuNavigationManager {
         _navigationStack.value = currentStack
     }
 
+    fun replaceTopMenu(menuState: MenuState) {
+        allMenus[menuState.id] = menuState
+        val currentStack = _navigationStack.value.toMutableList()
+        if (currentStack.isNotEmpty()) {
+            currentStack[currentStack.lastIndex] = menuState.copy(selectedIndex = 0)
+        } else {
+            currentStack.add(menuState.copy(selectedIndex = 0))
+        }
+        _navigationStack.value = currentStack
+    }
+
     fun registerMenu(menuState: MenuState) {
         allMenus[menuState.id] = menuState
         val currentStack = _navigationStack.value.toMutableList()

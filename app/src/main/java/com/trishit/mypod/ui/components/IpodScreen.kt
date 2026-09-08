@@ -269,28 +269,34 @@ fun IpodScreen(
                 }
             }
             "main_search_trigger" -> {
-                VoiceSearchScreen(
-                    searchTargetTitle = "Local Music",
-                    onResultFound = { query ->
-                        onVoiceSearchMain?.invoke(query)
-                    },
-                    onCancel = { onExitGame?.invoke() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
+                if (gameWheelEvents != null) {
+                    VoiceSearchScreen(
+                        wheelEvents = gameWheelEvents,
+                        searchTargetTitle = "Local Music",
+                        onResultFound = { query ->
+                            onVoiceSearchMain?.invoke(query)
+                        },
+                        onCancel = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
             }
             "ytdlp_search_trigger" -> {
-                VoiceSearchScreen(
-                    searchTargetTitle = "yt-dlp YouTube",
-                    onResultFound = { query ->
-                        onVoiceSearchYtDlp?.invoke(query)
-                    },
-                    onCancel = { onExitGame?.invoke() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
+                if (gameWheelEvents != null) {
+                    VoiceSearchScreen(
+                        wheelEvents = gameWheelEvents,
+                        searchTargetTitle = "yt-dlp YouTube",
+                        onResultFound = { query ->
+                            onVoiceSearchYtDlp?.invoke(query)
+                        },
+                        onCancel = { onExitGame?.invoke() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    )
+                }
             }
             else -> {
                 // Two-Pane Content Split Area
