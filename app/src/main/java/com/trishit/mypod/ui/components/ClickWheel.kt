@@ -188,7 +188,7 @@ fun ClickWheel(
         val metalGlareBrush = Brush.radialGradient(
             colors = listOf(
                 Color.White.copy(alpha = 0.12f),
-                themePreset.bodyPrimary.copy(alpha = 0.05f),
+                themePreset.centerButtonColor.copy(alpha = 0.05f),
                 Color.Transparent,
             ),
             center = Offset(size.width * 0.35f, size.height * 0.35f),
@@ -232,6 +232,8 @@ fun ClickWheel(
         }
 
         val isLightWheel = themePreset == ThemePreset.SILVER ||
+                themePreset == ThemePreset.CLASSIC_SILVER ||
+                themePreset.isLightMode ||
                 (themePreset.wheelColor.red > 0.5f && themePreset.wheelColor.green > 0.5f && themePreset.wheelColor.blue > 0.5f)
 
         // Radial Concave Dish Shading
@@ -537,8 +539,8 @@ fun ClickWheel(
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            themePreset.bodySecondary,
-                            themePreset.bodyPrimary,
+                            themePreset.centerButtonColor,
+                            themePreset.centerButtonColor,
                             themePreset.bodyPrimary,
                         )
                     )

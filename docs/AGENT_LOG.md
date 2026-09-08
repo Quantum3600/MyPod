@@ -292,6 +292,41 @@
   - `./gradlew testDebugUnitTest` executed and passed all 33 unit tests.
   - `./gradlew assembleDebug` compiled successfully with zero errors.
 
+## [2026-03-30] Task 25: Lyrics Async Fetching, Loading State, Edge-Case Parsing & Example Song Unit Tests
+- **Changes Made**:
+  - **Enhanced LRC Parser ([`LrcParser.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/data/lyrics/LrcParser.kt))**:
+    - Added support for header offset tags `[offset: +/-ms]` which automatically adjust all line timestamps.
+    - Added inline word timing tag cleaning `<mm:ss.xx>` for karaoke-style LRCs.
+    - Updated timestamp regex to support 1, 2, or 3-digit minutes and milliseconds.
+  - **Room Cache Protection ([`LyricsRepository.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/data/lyrics/LyricsRepository.kt))**:
+    - Ensured generated example fallback templates are never saved to Room DB so subsequent plays can retry fetching real LRCLIB lyrics online.
+  - **Header Loading Spinner ([`NowPlayingScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/ui/components/NowPlayingScreen.kt))**:
+    - Added a miniature circular loading indicator to the top bar lyrics mode button while `isLoadingLyrics` is true.
+    - Displayed progress spinner and `"Searching LRCLIB lyrics..."` loading text in lyrics view during asynchronous fetching.
+  - **Comprehensive Example Song Tests ([`LrcParserTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/trishit/mypod/lyrics/LrcParserTest.kt), [`LyricsRepositoryTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/trishit/mypod/lyrics/LyricsRepositoryTest.kt))**:
+    - Added test cases covering real LRCLIB sample payloads for *Daft Punk - Get Lucky*, *Queen - Bohemian Rhapsody*, *Adele - Hello*, and *Coldplay - Yellow*.
+- **Verification**:
+  - `./gradlew testDebugUnitTest` passed all 39 unit tests cleanly.
+
+## [2026-03-30] Task 26: Voice Search Recording Visualizer, Navigation Unstuck Fix & Search Enhancements
+- **Changes Made**:
+  - **Live Recording Indicator & Audio Visualizer ([`VoiceSearchScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/ui/components/VoiceSearchScreen.kt))**:
+    - Built a live 7-bar sound equalizer visualizer that animates dynamically based on `rmsdB` audio volume level from `onRmsChanged`.
+    - Added an active `🔴 REC` pulsing badge in the top header and clear status messages (`🔴 RECORDING... Speak now`, `🔍 Searching for...`, `⚠️ Speech timeout. Press CENTER to try again`).
+    - Added bottom iPod Wheel control guide explaining `CENTER`/`PLAY` to record/pause and `MENU` to cancel and exit.
+  - **Navigation Stack Unstuck Fix ([`MenuNavigationManager.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/navigation/MenuNavigationManager.kt), [`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/MainViewModel.kt), [`IpodScreen.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/ui/components/IpodScreen.kt))**:
+    - Introduced `replaceTopMenu` in `MenuNavigationManager` so search results replace `main_search_trigger` or `ytdlp_search_trigger` on the navigation stack.
+    - Wired `gameWheelEvents` to `VoiceSearchScreen` in `IpodScreen.kt` so pressing `MENU` on the Click Wheel immediately stops speech recognition and exits the search screen back to the home/parent menu.
+    - Wired `CENTER` (Select) and `PLAY/PAUSE` click wheel buttons to toggle recording or retry after a speech recognition timeout.
+  - **Voice Search Enhancements ([`MainViewModel.kt`](file:///D:/projects/MyPod/app/src/main/java/com/trishit/mypod/MainViewModel.kt))**:
+    - Cleaned recognized voice text (trimmed trailing speech recognizer punctuation).
+    - Updated main voice search to query both local tracks and online YouTube tracks when `YTDLP` source is enabled.
+  - **Unit Test Coverage ([`MenuNavigationManagerTest.kt`](file:///D:/projects/MyPod/app/src/test/java/com/trishit/mypod/navigation/MenuNavigationManagerTest.kt))**:
+    - Added unit test verifying `replaceTopMenu` replaces active menu without growing navigation stack depth.
+- **Verification**:
+  - `./gradlew testDebugUnitTest` executed and passed all 40 unit tests cleanly.
+
+
 
 
 

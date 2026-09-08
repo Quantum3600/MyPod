@@ -15,6 +15,7 @@ class UserSettingsRepository(private val context: Context) {
 
     private object Keys {
         val ACTIVE_SOURCE = stringPreferencesKey("active_source")
+        val ENABLED_SOURCES = stringPreferencesKey("enabled_sources_csv")
         val YTDLP_RESOLVER_ENABLED = booleanPreferencesKey("ytdlp_resolver_enabled")
         val SAF_FOLDER_URI = stringPreferencesKey("saf_folder_uri")
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
@@ -24,6 +25,18 @@ class UserSettingsRepository(private val context: Context) {
     val activeSourceFlow: Flow<PlaybackSourceType> = context.userSettingsDataStore.data.map { prefs ->
         val name = prefs[Keys.ACTIVE_SOURCE] ?: PlaybackSourceType.LOCAL.name
         runCatching { PlaybackSourceType.valueOf(name) }.getOrDefault(PlaybackSourceType.LOCAL)
+    }
+
+    val enabledSourcesFlow: Flow<Set<PlaybackSourceType>> = context.userSettingsDataStore.data.map { prefs ->
+        val csv = prefs[Keys.ENABLED_SOURCES]
+        if (csv.isNullOrBlank()) {
+            setOf(PlaybackSourceType.LOCAL, PlaybackSourceType.YTDLP)
+        } else {
+            csv.split(",")
+                .mapNotNull { name -> runCatching { PlaybackSourceType.valueOf(name) }.getOrNull() }
+                .toSet()
+                .ifEmpty { setOf(PlaybackSourceType.LOCAL) }
+        }
     }
 
     val ytdlpResolverEnabledFlow: Flow<Boolean> = context.userSettingsDataStore.data.map { prefs ->
@@ -45,6 +58,28 @@ class UserSettingsRepository(private val context: Context) {
     suspend fun setActiveSource(sourceType: PlaybackSourceType) {
         context.userSettingsDataStore.edit { prefs ->
             prefs[Keys.ACTIVE_SOURCE] = sourceType.name
+        }
+    }
+
+    suspend fun toggleSourceEnabled(sourceType: PlaybackSourceType) {
+        context.userSettingsDataStore.edit { prefs ->
+            val currentCsv = prefs[Keys.ENABLED_SOURCES]
+            val currentSet = if (currentCsv.isNullOrBlank()) {
+                setOf(PlaybackSourceType.LOCAL, PlaybackSourceType.YTDLP)
+            } else {
+                currentCsv.split(",")
+                    .mapNotNull { name -> runCatching { PlaybackSourceType.valueOf(name) }.getOrNull() }
+                    .toSet()
+            }
+
+            val newSet = if (sourceType in currentSet) {
+                val reduced = currentSet - sourceType
+                if (reduced.isEmpty()) setOf(PlaybackSourceType.LOCAL) else reduced
+            } else {
+                currentSet + sourceType
+            }
+
+            prefs[Keys.ENABLED_SOURCES] = newSet.joinToString(",") { it.name }
         }
     }
 

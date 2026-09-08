@@ -12,7 +12,7 @@ class LyricsRepository(
         override suspend fun getLyric(id: String): LyricEntity? = null
         override suspend fun insertLyric(lyric: LyricEntity) {}
         override suspend fun deleteOldLyrics(thresholdTimestamp: Long) {}
-    }
+    },
 ) {
 
     suspend fun fetchLyrics(
@@ -51,7 +51,7 @@ class LyricsRepository(
         try {
             val durationSecs = if (durationMs > 0) (durationMs / 1000).toInt() else null
 
-            // First attempt: clean track and artist name
+            // First attempt: clean track and artist name with duration
             var response = api.getLyrics(
                 trackName = cleanedTitle.ifBlank { title },
                 artistName = cleanedArtist.ifBlank { artist },
@@ -59,11 +59,22 @@ class LyricsRepository(
                 durationSeconds = durationSecs
             )
 
-            // Second attempt: without duration
-            if (!response.isSuccessful || response.body()?.syncedLyrics.isNullOrBlank()) {
+            // Second attempt: without duration constraint
+            if (!response.isSuccessful || (response.body()?.syncedLyrics.isNullOrBlank() && response.body()?.plainLyrics.isNullOrBlank())) {
                 response = api.getLyrics(
                     trackName = cleanedTitle.ifBlank { title },
                     artistName = cleanedArtist.ifBlank { artist },
+                    albumName = null,
+                    durationSeconds = null
+                )
+            }
+
+            // Third attempt: using uncleaned title and artist if they were different
+            if ((!response.isSuccessful || (response.body()?.syncedLyrics.isNullOrBlank() && response.body()?.plainLyrics.isNullOrBlank())) &&
+                (cleanedTitle != title || cleanedArtist != artist)) {
+                response = api.getLyrics(
+                    trackName = title,
+                    artistName = artist,
                     albumName = null,
                     durationSeconds = null
                 )
@@ -95,12 +106,11 @@ class LyricsRepository(
         var isExample = false
         if (!isFound) {
             syncedLrc = generateExampleLyrics(cleanedTitle.ifBlank { title }, cleanedArtist.ifBlank { artist }, durationMs)
-            isFound = true
             isExample = true
         }
 
-        // 4. Cache to Room DB
-        if (!syncedLrc.isNullOrBlank()) {
+        // 4. Cache to Room DB ONLY IF real online lyrics were found (do not cache generated example templates)
+        if (!isExample && (!syncedLrc.isNullOrBlank() || !plainLrc.isNullOrBlank())) {
             val entity = LyricEntity(
                 id = cacheKey,
                 trackTitle = title,
@@ -119,7 +129,7 @@ class LyricsRepository(
         LyricsResult(
             syncedLines = parsedLines,
             plainLyrics = plainLrc,
-            isFound = isFound,
+            isFound = true,
             sourceName = if (isExample) "Example Synced Template" else "LRCLIB API"
         )
     }

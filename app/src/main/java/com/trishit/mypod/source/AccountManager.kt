@@ -28,6 +28,12 @@ class AccountManager(
         initialValue = PlaybackSourceType.LOCAL
     )
 
+    val enabledSourcesState: StateFlow<Set<PlaybackSourceType>> = userSettingsRepository.enabledSourcesFlow.stateIn(
+        scope = scope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = setOf(PlaybackSourceType.LOCAL, PlaybackSourceType.YTDLP)
+    )
+
     val ytdlpResolverEnabledState: StateFlow<Boolean> = userSettingsRepository.ytdlpResolverEnabledFlow.stateIn(
         scope = scope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -49,6 +55,12 @@ class AccountManager(
     fun setActiveSource(sourceType: PlaybackSourceType) {
         scope.launch(Dispatchers.IO) {
             userSettingsRepository.setActiveSource(sourceType)
+        }
+    }
+
+    fun toggleSourceEnabled(sourceType: PlaybackSourceType) {
+        scope.launch(Dispatchers.IO) {
+            userSettingsRepository.toggleSourceEnabled(sourceType)
         }
     }
 

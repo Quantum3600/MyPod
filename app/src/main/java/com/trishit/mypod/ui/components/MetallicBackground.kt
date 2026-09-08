@@ -95,13 +95,14 @@ private const val METALLIC_GRAIN_AGSL = """
 @Composable
 fun MetallicBackground(
     modifier: Modifier = Modifier,
+    customColors: List<Color>? = null,
     isLightMode: Boolean = false,
     chassisStyle: ChassisStyle = ChassisStyle.CLAYMORPHIC_3D,
     cornerRadius: Dp = 28.dp,
     content: (@Composable () -> Unit)? = null
 ) {
     val isClaymorphic = chassisStyle == ChassisStyle.CLAYMORPHIC_3D
-    val colors = if (isClaymorphic) {
+    val colors = customColors ?: if (isClaymorphic) {
         if (isLightMode) MetallicLightGradient else MetallicDarkGradient
     } else {
         if (isLightMode) ClassicMetallicLightGradient else ClassicMetallicDarkGradient
@@ -185,8 +186,8 @@ fun MetallicBackground(
 
                         val topLeftCornerHighlightBrush = Brush.radialGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = if (isLightMode) 0.55f else 0.35f),
-                                Color.White.copy(alpha = if (isLightMode) 0.20f else 0.10f),
+                                Color.White.copy(alpha = if (isLightMode) 0.38f else 0.22f),
+                                Color.White.copy(alpha = if (isLightMode) 0.12f else 0.06f),
                                 Color.Transparent
                             ),
                             center = Offset(0f, 0f),
@@ -195,8 +196,8 @@ fun MetallicBackground(
 
                         val bottomRightCornerShadowBrush = Brush.radialGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = if (isLightMode) 0.38f else 0.55f),
-                                Color.Black.copy(alpha = if (isLightMode) 0.15f else 0.25f),
+                                Color.Black.copy(alpha = if (isLightMode) 0.25f else 0.38f),
+                                Color.Black.copy(alpha = if (isLightMode) 0.10f else 0.18f),
                                 Color.Transparent
                             ),
                             center = Offset(w, h),
@@ -205,7 +206,7 @@ fun MetallicBackground(
 
                         val topRightCornerShadowBrush = Brush.radialGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = if (isLightMode) 0.18f else 0.28f),
+                                Color.Black.copy(alpha = if (isLightMode) 0.12f else 0.18f),
                                 Color.Transparent
                             ),
                             center = Offset(w, 0f),
@@ -214,7 +215,7 @@ fun MetallicBackground(
 
                         val bottomLeftCornerHighlightBrush = Brush.radialGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = if (isLightMode) 0.22f else 0.12f),
+                                Color.White.copy(alpha = if (isLightMode) 0.14f else 0.08f),
                                 Color.Transparent
                             ),
                             center = Offset(0f, h),
@@ -223,46 +224,46 @@ fun MetallicBackground(
 
                         val topInnerHighlightBrush = Brush.verticalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = if (isLightMode) 0.45f else 0.25f),
+                                Color.White.copy(alpha = if (isLightMode) 0.30f else 0.16f),
                                 Color.Transparent
                             ),
                             startY = 0f,
-                            endY = cornerRadiusPx * 1.5f
+                            endY = cornerRadiusPx * 1.0f
                         )
 
                         val leftInnerHighlightBrush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = if (isLightMode) 0.40f else 0.22f),
+                                Color.White.copy(alpha = if (isLightMode) 0.28f else 0.15f),
                                 Color.Transparent
                             ),
                             startX = 0f,
-                            endX = cornerRadiusPx * 1.5f
+                            endX = cornerRadiusPx * 1.0f
                         )
 
                         val bottomInnerShadowBrush = Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = if (isLightMode) 0.25f else 0.40f)
+                                Color.Black.copy(alpha = if (isLightMode) 0.16f else 0.26f)
                             ),
-                            startY = h - cornerRadiusPx * 1.5f,
+                            startY = h - cornerRadiusPx * 1.0f,
                             endY = h
                         )
 
                         val rightInnerShadowBrush = Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = if (isLightMode) 0.25f else 0.40f)
+                                Color.Black.copy(alpha = if (isLightMode) 0.16f else 0.26f)
                             ),
-                            startX = w - cornerRadiusPx * 1.5f,
+                            startX = w - cornerRadiusPx * 1.0f,
                             endX = w
                         )
 
-                        val rimStrokeWidth = 1.5.dp.toPx()
+                        val rimStrokeWidth = 1.0.dp.toPx()
                         val rimBevelBrush = Brush.linearGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = if (isLightMode) 0.90f else 0.60f),
-                                Color.White.copy(alpha = if (isLightMode) 0.40f else 0.20f),
-                                Color.Black.copy(alpha = if (isLightMode) 0.35f else 0.55f)
+                                Color.White.copy(alpha = if (isLightMode) 0.65f else 0.40f),
+                                Color.White.copy(alpha = if (isLightMode) 0.25f else 0.12f),
+                                Color.Black.copy(alpha = if (isLightMode) 0.25f else 0.38f)
                             ),
                             start = Offset(0f, 0f),
                             end = Offset(w, h)
@@ -412,13 +413,11 @@ fun MetallicBackground(
     cornerRadius: Dp = 28.dp,
     content: (@Composable () -> Unit)? = null
 ) {
-    val isLightMode = themePreset == ThemePreset.SILVER || themePreset == ThemePreset.CLASSIC_SILVER
-    val chassisStyle = themePreset.chassisStyle
-
     MetallicBackground(
         modifier = modifier,
-        isLightMode = isLightMode,
-        chassisStyle = chassisStyle,
+        customColors = themePreset.gradientColors,
+        isLightMode = themePreset.isLightMode,
+        chassisStyle = themePreset.chassisStyle,
         cornerRadius = cornerRadius,
         content = content
     )

@@ -169,12 +169,22 @@ fun NowPlayingScreen(
                             .padding(horizontal = 4.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Lyrics,
-                            contentDescription = "Toggle Lyrics",
-                            tint = if (displayMode == NowPlayingDisplayMode.LYRICS) Color.White else Color(0xFF444444),
-                            modifier = Modifier.size(11.dp)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.Lyrics,
+                                contentDescription = "Toggle Lyrics",
+                                tint = if (displayMode == NowPlayingDisplayMode.LYRICS) Color.White else Color(0xFF444444),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            if (isLoadingLyrics) {
+                                Spacer(modifier = Modifier.width(3.dp))
+                                CircularProgressIndicator(
+                                    color = if (displayMode == NowPlayingDisplayMode.LYRICS) Color.White else Color(0xFF2B5B9E),
+                                    strokeWidth = 1.dp,
+                                    modifier = Modifier.size(8.dp)
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(6.dp))

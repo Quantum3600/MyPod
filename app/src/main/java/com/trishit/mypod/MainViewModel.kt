@@ -99,6 +99,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val ytdlpCoverFlowIndexState: StateFlow<Int> = _ytdlpCoverFlowIndexState.asStateFlow()
 
     val activeSourceState: StateFlow<PlaybackSourceType> = accountManager.activeSourceState
+    val enabledSourcesState: StateFlow<Set<PlaybackSourceType>> = accountManager.enabledSourcesState
     val ytdlpResolverEnabledState: StateFlow<Boolean> = accountManager.ytdlpResolverEnabledState
 
     private val _launchSafFolderPickerEvent = MutableSharedFlow<Unit>()
@@ -203,6 +204,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            enabledSourcesState.collect { sources ->
+                refreshMusicSubmenus()
+                refreshAudioSourcesMenu()
+                refreshSettingsMenu()
+            }
+        }
+        viewModelScope.launch {
             activeSourceState.collect { source ->
                 audioEngine.setSourceType(source)
                 refreshMusicSubmenus()
@@ -290,8 +298,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun shuffleAllSongs() {
         viewModelScope.launch(Dispatchers.IO) {
-            val source = activeSource()
-            val allTracks = source.getTracks()
+            val enabledSources = enabledSourcesState.value.map { getSourceForType(it) }
+            val allTracks = enabledSources.flatMap { it.getTracks() }.distinctBy { it.id }
             val validTracks = allTracks.filter { trk ->
                 trk.title.isNotBlank() &&
                 !trk.artist.contains("Unknown", ignoreCase = true) &&
@@ -302,7 +310,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             if (validTracks.isNotEmpty()) {
                 val shuffled = validTracks.shuffled()
-                source.playQueue(shuffled, 0)
+                val startTrack = shuffled.first()
+                val src = getSourceForType(startTrack.sourceType)
+                src.playQueue(shuffled, 0)
                 withContext(Dispatchers.Main) {
                     navigationManager.navigateToNowPlaying()
                 }
@@ -334,7 +344,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     hasSubMenu = false,
                     onSelectAction = {
                         viewModelScope.launch {
-                            audioEngine.playQueue(queue, idx)
+                            val src = getSourceForType(trk.sourceType)
+                            src.playQueue(queue, idx)
                             navigationManager.navigateToNowPlaying()
                         }
                     }
@@ -353,7 +364,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun activeSource(): PlaybackSource {
-        return when (activeSourceState.value) {
+        val primary = enabledSourcesState.value.firstOrNull() ?: activeSourceState.value
+        return getSourceForType(primary)
+    }
+
+    fun getSourceForType(sourceType: PlaybackSourceType): PlaybackSource {
+        return when (sourceType) {
             PlaybackSourceType.LOCAL -> localSource
             PlaybackSourceType.FILES -> fileExplorerSource
             PlaybackSourceType.SPOTIFY -> spotifySource
@@ -385,23 +401,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun refreshMusicSubmenus() {
         viewModelScope.launch(Dispatchers.IO) {
-            val source = activeSource()
+            val enabledSourceTypes = enabledSourcesState.value
+            val enabledSources = enabledSourceTypes.map { getSourceForType(it) }
 
-            // 1. All Songs
-            val tracks = source.getTracks()
-            _quizTracksState.value = tracks
-            val songItems = if (tracks.isEmpty()) {
+            // 1. All Songs across enabled sources
+            val allTracks = enabledSources.flatMap { it.getTracks() }.distinctBy { it.id }
+            _quizTracksState.value = allTracks
+
+            val songItems = if (allTracks.isEmpty()) {
                 listOf(
                     MenuItem(
                         id = "no_songs",
                         title = "No Songs Found",
-                        subtitle = "Source: ${source.sourceType.displayName}",
+                        subtitle = "Enabled: ${enabledSourceTypes.joinToString { it.displayName }}",
                         hasSubMenu = false,
-                        rightPane = RightPaneContent.ActionPreview("Music", "No audio tracks found in ${source.sourceType.displayName}.")
+                        rightPane = RightPaneContent.ActionPreview("Music", "No audio tracks found in enabled sources.")
                     )
                 )
             } else {
-                tracks.mapIndexed { index, track ->
+                allTracks.mapIndexed { index, track ->
                     MenuItem(
                         id = "song_${track.id}",
                         title = track.title,
@@ -410,8 +428,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         rightPane = RightPaneContent.MusicCategory(track.album),
                         onSelectAction = {
                             viewModelScope.launch {
-                                source.playQueue(tracks, index)
-                                navigationManager.navigateToNowPlaying()
+                                playTrackQueueForSource(track, allTracks, index)
                             }
                         }
                     )
@@ -422,10 +439,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             // 2. Artists
-            val artists = source.getArtists()
+            val artists = enabledSources.flatMap { it.getArtists() }.distinct()
             val artistItems = if (artists.isEmpty()) {
                 listOf(
-                    MenuItem("no_artists", "No Artists", subtitle = "Source: ${source.sourceType.displayName}", hasSubMenu = false)
+                    MenuItem("no_artists", "No Artists", subtitle = "No artists in enabled sources", hasSubMenu = false)
                 )
             } else {
                 artists.map { artist ->
@@ -436,7 +453,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         rightPane = RightPaneContent.MusicCategory(artist),
                         onSelectAction = {
                             viewModelScope.launch {
-                                val artistTracks = source.getTracksForArtist(artist)
+                                val artistTracks = enabledSources.flatMap { it.getTracksForArtist(artist) }.distinctBy { it.id }
                                 val subItems = artistTracks.mapIndexed { idx, trk ->
                                     MenuItem(
                                         id = "art_trk_${trk.id}",
@@ -445,8 +462,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         hasSubMenu = false,
                                         onSelectAction = {
                                             viewModelScope.launch {
-                                                source.playQueue(artistTracks, idx)
-                                                navigationManager.navigateToNowPlaying()
+                                                playTrackQueueForSource(trk, artistTracks, idx)
                                             }
                                         }
                                     )
@@ -463,12 +479,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 MenuState(id = "artists_menu", title = "Artists", items = artistItems)
             )
 
-            // 3. Albums (pure local/active library, no ytdlp blending in normal music submenus)
-            val sourceAlbums = source.getAlbums()
+            // 3. Albums
+            val sourceAlbums = enabledSources.flatMap { it.getAlbums() }.distinctBy { it.id }
             _coverFlowAlbumsState.value = sourceAlbums
             val albumItems = if (sourceAlbums.isEmpty()) {
                 listOf(
-                    MenuItem("no_albums", "No Albums", subtitle = "Source: ${source.sourceType.displayName}", hasSubMenu = false)
+                    MenuItem("no_albums", "No Albums", subtitle = "No albums in enabled sources", hasSubMenu = false)
                 )
             } else {
                 sourceAlbums.map { album ->
@@ -480,7 +496,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         rightPane = RightPaneContent.MusicCategory(album.name),
                         onSelectAction = {
                             viewModelScope.launch {
-                                val albumTracks = source.getTracksForAlbum(album.id)
+                                val albumTracks = enabledSources.flatMap { it.getTracksForAlbum(album.id) }.distinctBy { it.id }
                                 val subItems = albumTracks.mapIndexed { idx, trk ->
                                     MenuItem(
                                         id = "alb_trk_${trk.id}",
@@ -489,8 +505,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                         hasSubMenu = false,
                                         onSelectAction = {
                                             viewModelScope.launch {
-                                                source.playQueue(albumTracks, idx)
-                                                navigationManager.navigateToNowPlaying()
+                                                playTrackQueueForSource(trk, albumTracks, idx)
                                             }
                                         }
                                     )
@@ -508,10 +523,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             // 4. Genres
-            val genres = source.getGenres()
+            val genres = enabledSources.flatMap { it.getGenres() }.distinct()
             val genreItems = if (genres.isEmpty()) {
                 listOf(
-                    MenuItem("no_genres", "No Genres", subtitle = "Source: ${source.sourceType.displayName}", hasSubMenu = false)
+                    MenuItem("no_genres", "No Genres", subtitle = "No genres in enabled sources", hasSubMenu = false)
                 )
             } else {
                 genres.map { genre ->
@@ -526,6 +541,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             navigationManager.registerMenu(
                 MenuState(id = "genres_menu", title = "Genres", items = genreItems)
             )
+        }
+    }
+
+    private fun playTrackQueueForSource(startTrack: TrackMetadata, tracks: List<TrackMetadata>, startIndex: Int) {
+        viewModelScope.launch {
+            val src = getSourceForType(startTrack.sourceType)
+            src.playQueue(tracks, startIndex)
+            navigationManager.navigateToNowPlaying()
         }
     }
 
@@ -726,19 +749,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onVoiceSearchMain(query: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val tracks = localSource.getTracks()
+            val cleanQuery = query.trim().trimEnd('.', '?', '!', ',')
+            val enabledSources = enabledSourcesState.value.map { getSourceForType(it) }
+            val tracks = enabledSources.flatMap { it.getTracks() }.distinctBy { it.id }
             val matchingTracks = tracks.filter { trk ->
-                trk.title.contains(query, ignoreCase = true) ||
-                trk.artist.contains(query, ignoreCase = true) ||
-                trk.album.contains(query, ignoreCase = true)
+                trk.title.contains(cleanQuery, ignoreCase = true) ||
+                trk.artist.contains(cleanQuery, ignoreCase = true) ||
+                trk.album.contains(cleanQuery, ignoreCase = true)
+            }.toMutableList()
+
+            // Search online YouTube if yt-dlp source is enabled and query is not blank
+            if (enabledSourcesState.value.contains(PlaybackSourceType.YTDLP) && cleanQuery.isNotBlank()) {
+                val ytResults = ytDlpSource.search(cleanQuery)
+                val existingIds = matchingTracks.map { it.id }.toSet()
+                matchingTracks.addAll(ytResults.filterNot { it.id in existingIds })
             }
 
             val items = if (matchingTracks.isEmpty()) {
                 listOf(
                     MenuItem(
                         id = "no_search_results",
-                        title = "No Local Songs Found",
-                        subtitle = "Query: '$query'",
+                        title = "No Songs Found",
+                        subtitle = "Query: '$cleanQuery'",
                         hasSubMenu = false
                     )
                 )
@@ -751,8 +783,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         hasSubMenu = false,
                         onSelectAction = {
                             viewModelScope.launch {
-                                localSource.playQueue(matchingTracks, idx)
-                                navigationManager.navigateToNowPlaying()
+                                playTrackQueueForSource(trk, matchingTracks, idx)
                             }
                         }
                     )
@@ -760,10 +791,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             withContext(Dispatchers.Main) {
-                navigationManager.pushMenu(
+                navigationManager.replaceTopMenu(
                     MenuState(
                         id = "main_search_results",
-                        title = "Search: '$query'",
+                        title = "Search: '$cleanQuery'",
                         items = items
                     )
                 )
@@ -773,7 +804,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onVoiceSearchYtDlp(query: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val results = ytDlpSource.search(query)
+            val cleanQuery = query.trim().trimEnd('.', '?', '!', ',')
+            val results = ytDlpSource.search(cleanQuery)
             refreshYtDlpSubmenus()
 
             val items = if (results.isEmpty()) {
@@ -781,7 +813,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     MenuItem(
                         id = "no_ytdlp_results",
                         title = "No YouTube Results",
-                        subtitle = "Query: '$query'",
+                        subtitle = "Query: '$cleanQuery'",
                         hasSubMenu = false
                     )
                 )
@@ -803,10 +835,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             withContext(Dispatchers.Main) {
-                navigationManager.pushMenu(
+                navigationManager.replaceTopMenu(
                     MenuState(
                         id = "ytdlp_search_results",
-                        title = "yt-dlp: '$query'",
+                        title = "yt-dlp: '$cleanQuery'",
                         items = items
                     )
                 )
@@ -1019,7 +1051,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun refreshAudioSourcesMenu() {
-        val currentSource = activeSourceState.value
+        val enabledSources = enabledSourcesState.value
         val isYtdlp = ytdlpResolverEnabledState.value
         val sources = PlaybackSourceType.entries
 
@@ -1031,28 +1063,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 PlaybackSourceType.FILES,
                 PlaybackSourceType.YTDLP
             )
-            val isSelected = src == currentSource
-            val radioSymbol = if (isSelected) "(●) " else "(○) "
+            val isEnabled = src in enabledSources
+            val checkSymbol = if (isEnabled) "[x] " else "[ ] "
 
             val sub = when {
-                isSelected -> "Active Playback Source"
+                isEnabled -> "Enabled Audio Source"
                 !isSupported && src == PlaybackSourceType.SPOTIFY -> "Disabled (Spotify App Remote Required)"
                 !isSupported && src == PlaybackSourceType.YOUTUBE -> "Disabled (YouTube Data API Key Required)"
                 !isSupported && src == PlaybackSourceType.APPLE_MUSIC -> "Disabled (MusicKit Token Required)"
-                else -> "Tap to select"
+                else -> "Tap to enable"
             }
 
             items.add(
                 MenuItem(
                     id = "src_${src.name}",
-                    title = "$radioSymbol${src.displayName}",
+                    title = "$checkSymbol${src.displayName}",
                     subtitle = sub,
                     hasSubMenu = false,
                     isEnabled = isSupported,
                     rightPane = RightPaneContent.ActionPreview("Audio Source", src.displayName),
                     onSelectAction = {
-                        accountManager.setActiveSource(src)
+                        accountManager.toggleSourceEnabled(src)
                         refreshAudioSourcesMenu()
+                        refreshMusicSubmenus()
                         refreshSettingsMenu()
                     }
                 )
@@ -1100,7 +1133,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun refreshSettingsMenu() {
-        val currentSource = activeSourceState.value
+        val enabledSources = enabledSourcesState.value
         val clickSound = clickSoundEnabledState.value
         val currentTheme = selectedThemeState.value
 
@@ -1116,9 +1149,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MenuItem(
                 id = "set_audio_sources",
                 title = "Audio Sources & Resolvers",
-                subtitle = "Active: ${currentSource.displayName}",
+                subtitle = "Enabled: ${enabledSources.joinToString { it.displayName }}",
                 hasSubMenu = true,
-                rightPane = RightPaneContent.ActionPreview("Audio Sources", "Select playback source"),
+                rightPane = RightPaneContent.ActionPreview("Audio Sources", "Select enabled audio sources"),
                 targetMenuId = "audio_sources_menu"
             ),
             MenuItem(
@@ -1136,7 +1169,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MenuItem(
                 id = "set_about",
                 title = "About MyPod",
-                subtitle = "v1.0.0 • Developer: Trishit Majumdar",
+                subtitle = "v1.1.0 • Developer: Trishit Majumdar",
                 hasSubMenu = true,
                 rightPane = RightPaneContent.ExternalLinkPreview("Developer Website",  url = "https://trishit.me"),
                 intentUrl = "https://trishit.me"
@@ -1277,13 +1310,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (tracks.isEmpty()) return
         val startTrack = tracks[index.coerceIn(tracks.indices)]
         viewModelScope.launch {
-            if (startTrack.sourceType == PlaybackSourceType.YTDLP || startTrack.id.startsWith("ytdlp_")) {
-                ytDlpSource.playQueue(tracks, index)
-            } else if (startTrack.sourceType == PlaybackSourceType.FILES) {
-                fileExplorerSource.playQueue(tracks, index)
-            } else {
-                localSource.playQueue(tracks, index)
-            }
+            val src = getSourceForType(startTrack.sourceType)
+            src.playQueue(tracks, index)
             withContext(Dispatchers.Main) {
                 navigationManager.navigateToNowPlaying()
             }

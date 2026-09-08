@@ -112,8 +112,8 @@ fun Modifier.brushedMetalTexture(
  */
 fun Modifier.claymorphismBevels(
     cornerRadiusPx: Float,
-    highlightAlpha: Float = 0.45f,
-    shadowAlpha: Float = 0.50f,
+    highlightAlpha: Float = 0.28f,
+    shadowAlpha: Float = 0.32f,
 ): Modifier = this.drawWithCache {
     val highlightBrush = Brush.linearGradient(
         colors = listOf(
@@ -136,8 +136,8 @@ fun Modifier.claymorphismBevels(
     )
 
     val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
-    val highlightStroke = Stroke(width = 3.5f)
-    val shadowStroke = Stroke(width = 4.0f)
+    val highlightStroke = Stroke(width = 2.0f)
+    val shadowStroke = Stroke(width = 2.2f)
 
     onDrawBehind {
         // Top-Left 3D Light Highlight Bevel
@@ -228,8 +228,8 @@ fun DrawScope.drawGrainyMetalTexture(
  */
 fun DrawScope.drawClaymorphismBevels(
     cornerRadiusPx: Float,
-    highlightAlpha: Float = 0.45f,
-    shadowAlpha: Float = 0.50f,
+    highlightAlpha: Float = 0.28f,
+    shadowAlpha: Float = 0.32f,
 ) {
     val cornerRadius = CornerRadius(cornerRadiusPx, cornerRadiusPx)
 
@@ -245,7 +245,7 @@ fun DrawScope.drawClaymorphismBevels(
         ),
         size = size,
         cornerRadius = cornerRadius,
-        style = Stroke(width = 3.5f),
+        style = Stroke(width = 2.0f),
     )
 
     drawRoundRect(
@@ -260,7 +260,7 @@ fun DrawScope.drawClaymorphismBevels(
         ),
         size = size,
         cornerRadius = cornerRadius,
-        style = Stroke(width = 4.0f),
+        style = Stroke(width = 2.2f),
     )
 }
 
